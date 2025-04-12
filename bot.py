@@ -8,6 +8,7 @@ import os
 api_id = 18377832  # جایگزین شود
 api_hash = "ed8556c450c6d0fd68912423325dd09c"  # جایگزین شود
 session_name = "my_ai"
+admin_id = 7094106651
 
 client = TelegramClient(session_name, api_id, api_hash)
 bot_active = True
@@ -60,7 +61,8 @@ async def handle_language(event):
     # اطمینان از اینکه فقط زبان‌ها پردازش بشن
     if lang in languages:
         user_states[event.sender_id] = lang
-        await event.edit(f"زبان انتخاب‌شده: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**")
+        await event.edit(f"زبان انتخاب‌شده: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**", buttons=[
+                 Button.inline("بازگشت به منوی زبان‌ها", b"coding")])
 
 @client.on(events.NewMessage)
 async def handle_message(event):
@@ -120,15 +122,18 @@ async def turn_off(event):
         await event.respond("ربات خاموش شد.")
 
 @client.on(events.CallbackQuery(data=b'same_lang'))
-async def handle_same_lang(event):
+async def handle_language(event):
     if not bot_active and event.sender_id != admin_id:
         return
 
-    lang = user_states.get(event.sender_id)
-    if lang:
-        await event.edit(
-            f"زبان فعلی: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**")
-
+    lang = event.data.decode()
+    
+‎    # اطمینان از اینکه فقط زبان‌ها پردازش بشن
+    if lang in languages:
+        user_states[event.sender_id] = lang
+        await event.edit(f"زبان ‌فعلی: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**", buttons=[
+                 Button.inline("بازگشت به منوی زبان‌ها", b"coding")])
+        
 @client.on(events.NewMessage(pattern='/broadcast (.+)'))
 async def broadcast(event):
     if event.sender_id != admin_id:
