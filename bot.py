@@ -88,18 +88,18 @@ async def choose_language(event):
     if not bot_active and event.sender_id != admin_id:
         return
 
-    
+    # ساخت دکمه‌ها به صورت ردیف‌های دوتایی
     rows = []
     for i in range(0, len(languages), 2):
         row = [Button.inline(languages[i], languages[i].encode())]
         if i + 1 < len(languages):
             row.append(Button.inline(languages[i + 1], languages[i + 1].encode()))
         rows.append(row)
-
+    
+    # ارسال پیام با دکمه‌ها
     await event.edit(
-        help_message, 
-        buttons=[
-            [Button.inline("🏁 شروع کنید!", b"coding")],
+        "**لطفاً یکی از زبان‌ها را انتخاب کنید:**", 
+        buttons=rows + [
             [Button.inline("🔙 برگشت به منوی اصلی", b"main_menu")]  # دکمه برگشت به منو اصلی
         ]
     )
