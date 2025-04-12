@@ -66,9 +66,22 @@ async def start(event):
     buttons=[
         [Button.inline("🧬 کد نویسی", b"coding")],
         [Button.inline("📚 راهنما", b"help")],
-        [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "https://t.me/@n6xel")]
+        [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "https://t.me/n6xel")]
     ]
 )
+
+@client.on(events.CallbackQuery(data=b"main_menu"))
+async def return_to_main_menu(event):
+    await event.edit(
+        "**سلام، چطوری میتونم کمکت کنم؟**", 
+        buttons=[
+            [Button.inline("🧬 کد نویسی", b"coding")],
+            [Button.inline("📚 راهنما", b"help")],
+            [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "https://t.me/n6xel")],
+            [Button.inline("🔙 برگشت به منوی اصلی", b"main_menu")]  # دکمه برگشت به منو
+        ]
+    )
+
 
 @client.on(events.CallbackQuery(data=b'coding'))
 async def choose_language(event):
@@ -83,7 +96,13 @@ async def choose_language(event):
             row.append(Button.inline(languages[i + 1], languages[i + 1].encode()))
         rows.append(row)
 
-    await event.edit("**یکی از زبان‌ها رو انتخاب کن:**", buttons=rows)
+    await event.edit(
+        help_message, 
+        buttons=[
+            [Button.inline("🏁 شروع کنید!", b"coding")],
+            [Button.inline("🔙 برگشت به منوی اصلی", b"main_menu")]  # دکمه برگشت به منو اصلی
+        ]
+    )
 
 
 @client.on(events.CallbackQuery)
@@ -215,10 +234,13 @@ async def show_help(event):
     💡 از این ربات لذت ببرید و سوالات خود را به راحتی بپرسید!
     """
 
-    # ویرایش پیام با راهنما و دکمه‌ها
-    await event.edit(help_message, buttons=[
-        [Button.inline("🏁 شروع کنید!", b"coding")]
-    ])
+    await event.edit(
+        help_message, 
+        buttons=[
+            [Button.inline("🏁 شروع کنید!", b"coding")],
+            [Button.inline("🔙 برگشت به منوی اصلی", b"main_menu")]  # دکمه برگشت به منو اصلی
+        ]
+    )
 
         
 @client.on(events.NewMessage(pattern='/broadcast (.+)'))
