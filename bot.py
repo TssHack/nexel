@@ -46,16 +46,21 @@ async def choose_language(event):
         if i + 1 < len(languages):
             row.append(Button.inline(languages[i + 1], languages[i + 1].encode()))
         rows.append(row)
+
     await event.edit("**یکی از زبان‌ها رو انتخاب کن:**", buttons=rows)
+
 
 @client.on(events.CallbackQuery)
 async def handle_language(event):
     if not bot_active and event.sender_id != admin_id:
         return
+
     lang = event.data.decode()
+    
+    # اطمینان از اینکه فقط زبان‌ها پردازش بشن
     if lang in languages:
         user_states[event.sender_id] = lang
-        await event.edit(f"زبان انتخاب‌شده: {lang}\n**سوالت رو بپرس برات کدشو بنویس.**")
+        await event.edit(f"زبان انتخاب‌شده: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**")
 
 @client.on(events.NewMessage)
 async def handle_message(event):
