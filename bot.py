@@ -104,7 +104,6 @@ async def handle_message(event):
                 # در غیر این صورت پاسخ را ارسال کرده و دکمه‌ها را اضافه می‌کنیم
                 await processing.edit(response, buttons=[
                  Button.inline("بازگشت به منوی زبان‌ها", b"coding")])
-                ])
 
             # پاک کردن وضعیت کاربر پس از ارسال پاسخ
             del user_states[event.sender_id]
