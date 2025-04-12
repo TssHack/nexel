@@ -45,7 +45,7 @@ async def choose_language(event):
         row = [Button.inline(languages[i], languages[i].encode())]
         if i + 1 < len(languages):
             row.append(Button.inline(languages[i + 1], languages[i + 1].encode()))
-        rows.append(row
+        rows.append(row)
     await event.edit("**یکی از زبان‌ها رو انتخاب کن:**", buttons=rows)
 
 @client.on(events.CallbackQuery)
