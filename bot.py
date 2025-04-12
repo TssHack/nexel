@@ -30,7 +30,7 @@ async def start(event):
     if not bot_active and event.sender_id != admin_id:
         return
     await add_user(event.sender_id)
-    await event.respond("سلام، چطوری میتونم کمکت کنم؟", buttons=[
+    await event.respond("**سلام، چطوری میتونم کمکت کنم؟**", buttons=[
         [Button.inline("کد نویسی", b"coding")]
     ])
 
@@ -38,29 +38,43 @@ async def start(event):
 async def choose_language(event):
     if not bot_active and event.sender_id != admin_id:
         return
-    rows = [[Button.inline(lang, lang.encode())] for lang in languages]
-    await event.edit("یکی از زبان‌ها رو انتخاب کن:", buttons=rows)
+
+    # ساخت دکمه‌ها به صورت ردیف‌های دوتایی
+    rows = []
+    for i in range(0, len(languages), 2):
+        row = [Button.inline(languages[i], languages[i].encode())]
+        if i + 1 < len(languages):
+            row.append(Button.inline(languages[i + 1], languages[i + 1].encode()))
+        rows.append(row
+    await event.edit("**یکی از زبان‌ها رو انتخاب کن:**", buttons=rows)
 
 @client.on(events.CallbackQuery)
 async def handle_language(event):
     if not bot_active and event.sender_id != admin_id:
         return
-
     lang = event.data.decode()
     if lang in languages:
         user_states[event.sender_id] = lang
-        await event.respond(f"زبان انتخاب‌شده: {lang}\nپیامت رو بفرست تا کد رو بسازم.")
+        await event.edit(f"زبان انتخاب‌شده: {lang}\n**سوالت رو بپرس برات کدشو بنویس.**")
 
 @client.on(events.NewMessage)
 async def handle_message(event):
     if not bot_active and event.sender_id != admin_id:
         return
-
     if event.sender_id in user_states:
         lang = user_states[event.sender_id]
-        prompt = f"{lang}: {event.text.strip()}. فقط کد خروجی بده."
+        user_input = event.text.strip()
 
-        processing = await event.respond("در حال پردازش کدت هستم... لطفاً صبر کن.")
+        # بررسی معتبر بودن درخواست
+        is_valid = await is_code_related(user_input)
+        if not is_valid:
+            await event.respond("**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**")
+            del user_states[event.sender_id]
+            return
+
+        prompt = f"{lang}: {user_input}. فقط کد خروجی بده."
+
+        processing = await event.respond("**در حال پردازش کدت هستم... لطفاً صبر کن.**")
 
         response = await call_api(prompt, event.sender_id)
 
@@ -111,6 +125,7 @@ async def broadcast(event):
                     pass
     await event.respond("پیام برای همه ارسال شد.")
 
+
 async def call_api(query, user_id):
     try:
         url = "https://api.binjie.fun/api/generateStream"
@@ -137,6 +152,11 @@ async def call_api(query, user_id):
         return res.text.strip()
     except Exception as e:
         return f"خطا در پاسخ‌گویی: {e}"
+
+async def is_code_related(text):
+    check_prompt = f'کاربر این پیام را فرستاده:\n"{text}"\n\nآیا این یک درخواست معتبر برای تولید کد برنامه‌نویسی هست؟ فقط با "yes" یا "no" جواب بده.'
+    reply = await call_api(check_prompt, "validator-check")
+    return "yes" in reply.lower()
 
 async def add_user(user_id):
     async with aiosqlite.connect("users.db") as db:
