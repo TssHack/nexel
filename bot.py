@@ -183,10 +183,12 @@ async def call_api(query, user_id):
     except Exception as e:
         return f"خطا در پاسخ‌گویی: {e}"
 
-async def is_code_related(text):
-    check_prompt = f'کاربر این پیام را فرستاده:\n"{text}"\n\nآیا این یک درخواست معتبر برای تولید کد برنامه‌نویسی هست؟ فقط با "yes" یا "no" جواب بده.'
-    reply = await call_api(check_prompt, "validator-check")
-    return "yes" in reply.lower()
+async def is_code_related(text, event):
+    # نشان دادن تایپینگ
+    async with client.action(event.chat_id, "typing"):
+        check_prompt = f'کاربر این پیام را فرستاده:\n"{text}"\n\nآیا این یک درخواست معتبر برای تولید کد برنامه‌نویسی هست؟ فقط با "yes" یا "no" جواب بده.'
+        reply = await call_api(check_prompt, "validator-check")
+        return "yes" in reply.lower()
 
 async def add_user(user_id):
     async with aiosqlite.connect("users.db", check_same_thread=False) as db:
