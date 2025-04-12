@@ -71,39 +71,43 @@ async def handle_message(event):
 
     chat_id = event.chat_id
 
-    async with client.action(chat_id, "typing"):
-    
-    if event.sender_id in user_states:
-        lang = user_states[event.sender_id]
-        user_input = event.text.strip()
+    async with client.action(chat_id, "typing"):  # وضعیت تایپ را نشان می‌دهیم
+        if event.sender_id in user_states:
+            lang = user_states[event.sender_id]
+            user_input = event.text.strip()
 
-        # بررسی معتبر بودن درخواست
-        is_valid = await is_code_related(user_input)
-        if not is_valid:
-            await event.respond("**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**")
+            # بررسی معتبر بودن درخواست
+            is_valid = await is_code_related(user_input)
+            if not is_valid:
+                await event.respond("**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**")
+                del user_states[event.sender_id]
+                return
+
+            prompt = f"{lang}: {user_input}. فقط کد خروجی بده."
+
+            # پیام در حال پردازش
+            processing = await event.respond("**در حال پردازش کدت هستم... لطفاً صبر کن.**")
+
+            # درخواست به API برای دریافت کد
+            response = await call_api(prompt, event.sender_id)
+
+            if len(response) > 3900:
+                # اگر کد طولانی است، آن را در فایل ذخیره می‌کنیم
+                ext = ext_map.get(lang, "txt")
+                filename = f"code_{lang.lower()}.{ext}"
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(response)
+                await client.send_file(event.chat_id, filename, caption=f"کدت آماده‌ست (زبان: {lang})")
+                os.remove(filename)
+            else:
+                # در غیر این صورت پاسخ را ارسال کرده و دکمه‌ها را اضافه می‌کنیم
+                await processing.edit(response, buttons=[
+                    [Button.inline("کد جدید از زبان کنونی", b"same_lang"),
+                     Button.inline("بازگشت به منوی زبان‌ها", b"coding")]
+                ])
+
+            # پاک کردن وضعیت کاربر پس از ارسال پاسخ
             del user_states[event.sender_id]
-            return
-
-        prompt = f"{lang}: {user_input}. فقط کد خروجی بده."
-
-        processing = await event.respond("**در حال پردازش کدت هستم... لطفاً صبر کن.**")
-
-        response = await call_api(prompt, event.sender_id)
-
-        if len(response) > 3900:
-            ext = ext_map.get(lang, "txt")
-            filename = f"code_{lang.lower()}.{ext}"
-            with open(filename, "w", encoding="utf-8") as f:
-                f.write(response)
-            await client.send_file(event.chat_id, filename, caption=f"کدت آماده‌ست (زبان: {lang})")
-            os.remove(filename)
-        else:
-            await processing.edit(response, buttons=[
-                [Button.inline("کد جدید از زبان کنونی", b"same_lang"),
-                 Button.inline("بازگشت به منوی زبان‌ها", b"coding")]
-            ])
-
-        del user_states[event.sender_id]
 
 @client.on(events.NewMessage(pattern='/admin'))
 async def admin_panel(event):
