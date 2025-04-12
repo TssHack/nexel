@@ -26,13 +26,42 @@ ext_map = {
 
 user_states = {}
 
+json_file = 'users.json'
+
+# بارگذاری کاربران از فایل JSON
+def load_users():
+    try:
+        with open(json_file, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
+
+# ذخیره کاربران به فایل JSON
+def save_users(users):
+    with open(json_file, 'w', encoding='utf-8') as file:
+        json.dump(users, file, ensure_ascii=False, indent=4)
+
+# ذخیره کاربر در فایل JSON هنگام استارت ربات
+def save_started_user(user_id):
+    users = load_users()
+    if user_id not in users:
+        users.append(user_id)
+        save_users(users)
+
+# دریافت لیست کاربران استارت کرده از فایل JSON
+def get_started_users():
+    return load_users()
+
 @client.on(events.NewMessage(pattern='/start'))
 async def start(event):
     if not bot_active and event.sender_id != admin_id:
         return
     await add_user(event.sender_id)
+    save_started_user(user_id)
     await event.respond("**سلام، چطوری میتونم کمکت کنم؟**", buttons=[
-        [Button.inline("کد نویسی", b"coding")]
+        [Button.inline("🧬 کد نویسی", b"coding")],
+        [Button.inline("📚 راهنما", b"help")]
+        [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "t.me/@n6xel")]
     ])
 
 @client.on(events.CallbackQuery(data=b'coding'))
@@ -111,6 +140,25 @@ async def admin_panel(event):
     msg = "**پنل مدیریت فعال است:**\n/on - روشن کردن ربات\n/off - خاموش کردن ربات\n/broadcast [پیام]"
     await event.respond(msg)
 
+@client.on(events.NewMessage(pattern="/list_started"))
+async def list_started_users(event):
+    admin_id = YOUR_TELEGRAM_ID  # اید‌ی تلگرام ادمین را وارد کنید
+    
+    if event.sender_id == admin_id:  # فقط ادمین مجاز به دیدن لیست است
+        users = get_started_users()
+        user_list = ""
+        for user_id in users:
+            user = await client.get_entity(user_id)
+            user_list += f"@{user.username if user.username else 'Unknown'}\n"
+        
+        if not user_list:
+            user_list = "**هیچ کاربری ربات را استارت نکرده است.**"
+        
+        # ارسال لیست به ادمین
+        await event.respond(f"**لیست کاربرانی که ربات را استارت کرده‌اند:**\n\n{user_list}")
+    else:
+        await event.respond("**شما اجازه مشاهده این اطلاعات را ندارید.**")
+
 @client.on(events.NewMessage(pattern='/on'))
 async def turn_on(event):
     global bot_active
@@ -136,6 +184,36 @@ async def handle_language(event):
         user_states[event.sender_id] = lang
         await event.edit(f"زبان ‌فعلی: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**", buttons=[
                  Button.inline("بازگشت به منوی زبان‌ها", b"coding")])
+
+@client.on(events.CallbackQuery(data=b"help"))
+async def show_help(event):
+    await event.answer()  
+
+    help_message = """
+    **🌟 راهنمای استفاده از ربات 🌟**
+
+    برای استفاده از ربات، مراحل زیر را دنبال کنید:
+    
+    1️⃣ **انتخاب زبان**: ابتدا یک زبان برنامه‌نویسی انتخاب کنید.
+    2️⃣ **ارسال سوال**: سوال خود را به زبان انتخابی بنویسید.
+    3️⃣ **دریافت کد**: ربات سعی می‌کند بهترین کد ممکن را برای شما بنویسد.
+    
+    🔄 **کد جدید**: اگر می‌خواهید کد جدیدی از همان زبان دریافت کنید، دکمه "کد جدید از زبان کنونی" را فشار دهید.
+    
+    ⬅️ **بازگشت به زبان‌ها**: برای بازگشت به منوی انتخاب زبان‌ها، دکمه "بازگشت به منوی زبان‌ها" را بزنید.
+
+    ❗️ **توجه**: ربات فقط درخواست‌های مرتبط با برنامه‌نویسی را پردازش می‌کند. اگر پیامی غیرمرتبط ارسال کنید، پردازش نخواهد شد.
+    
+    🔄 برای دریافت راهنمای بیشتر، همین دکمه را دوباره فشار دهید.
+
+    💡 از این ربات لذت ببرید و سوالات خود را به راحتی بپرسید!
+    """
+
+    # ویرایش پیام با راهنما و دکمه‌ها
+    await event.edit(help_message, buttons=[
+        [Button.inline("🏁 شروع کنید!", b"coding")]
+    ])
+
         
 @client.on(events.NewMessage(pattern='/broadcast (.+)'))
 async def broadcast(event):
