@@ -91,7 +91,10 @@ async def handle_message(event):
             await client.send_file(event.chat_id, filename, caption=f"کدت آماده‌ست (زبان: {lang})")
             os.remove(filename)
         else:
-            await processing.edit(response)
+            await processing.edit(response, buttons=[
+                [Button.inline("کد جدید از زبان کنونی", b"same_lang"),
+                 Button.inline("بازگشت به منوی زبان‌ها", b"coding")]
+            ])
 
         del user_states[event.sender_id]
 
@@ -115,6 +118,16 @@ async def turn_off(event):
     if event.sender_id == admin_id:
         bot_active = False
         await event.respond("ربات خاموش شد.")
+
+@client.on(events.CallbackQuery(data=b'same_lang'))
+async def handle_same_lang(event):
+    if not bot_active and event.sender_id != admin_id:
+        return
+
+    lang = user_states.get(event.sender_id)
+    if lang:
+        await event.edit(
+            f"زبان فعلی: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**")
 
 @client.on(events.NewMessage(pattern='/broadcast (.+)'))
 async def broadcast(event):
