@@ -148,7 +148,7 @@ async def admin_panel(event):
 
 @client.on(events.NewMessage(pattern="/list_started"))
 async def list_started_users(event):
-    admin_id = YOUR_TELEGRAM_ID  # اید‌ی تلگرام ادمین را وارد کنید
+    admin_id = 7094106651  # اید‌ی تلگرام ادمین را وارد کنید
     
     if event.sender_id == admin_id:  # فقط ادمین مجاز به دیدن لیست است
         users = get_started_users()
