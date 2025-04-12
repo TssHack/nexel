@@ -68,6 +68,11 @@ async def handle_language(event):
 async def handle_message(event):
     if not bot_active and event.sender_id != admin_id:
         return
+
+    chat_id = event.chat_id
+
+    async with client.action(chat_id, "typing"):
+    
     if event.sender_id in user_states:
         lang = user_states[event.sender_id]
         user_input = event.text.strip()
