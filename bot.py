@@ -190,7 +190,8 @@ async def is_code_related(text):
     return "yes" in reply.lower()
 
 async def add_user(user_id):
-    async with aiosqlite.connect("users.db") as db:
+    async with aiosqlite.connect("users.db", check_same_thread=False) as db:
+        await db.execute("PRAGMA busy_timeout = 3000")
         await db.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY)")
         await db.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
         await db.commit()
