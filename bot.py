@@ -133,7 +133,6 @@ async def handle_language(event):
 
     lang = event.data.decode()
     
-‎    # اطمینان از اینکه فقط زبان‌ها پردازش بشن
     if lang in languages:
         user_states[event.sender_id] = lang
         await event.edit(f"زبان ‌فعلی: {lang}\n\n**سوالت رو بپرس برات کدشو بنویسم.**", buttons=[
