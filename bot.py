@@ -57,6 +57,8 @@ def get_started_users():
 async def start(event):
     if not bot_active and event.sender_id != admin_id:
         return
+
+    user_id = event.sender_id
     await add_user(event.sender_id)
     save_started_user(user_id)
     await event.respond("**سلام، چطوری میتونم کمکت کنم؟**", buttons=[
