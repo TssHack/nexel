@@ -29,7 +29,6 @@ user_states = {}
 
 json_file = 'users.json'
 
-# بارگذاری کاربران از فایل JSON
 def load_users():
     try:
         with open(json_file, 'r', encoding='utf-8') as file:
@@ -37,19 +36,17 @@ def load_users():
     except FileNotFoundError:
         return []
 
-# ذخیره کاربران به فایل JSON
+
 def save_users(users):
     with open(json_file, 'w', encoding='utf-8') as file:
         json.dump(users, file, ensure_ascii=False, indent=4)
 
-# ذخیره کاربر در فایل JSON هنگام استارت ربات
 def save_started_user(user_id):
     users = load_users()
     if user_id not in users:
         users.append(user_id)
         save_users(users)
 
-# دریافت لیست کاربران استارت کرده از فایل JSON
 def get_started_users():
     return load_users()
 
@@ -77,8 +74,7 @@ async def return_to_main_menu(event):
         buttons=[
             [Button.inline("🧬 کد نویسی", b"coding")],
             [Button.inline("📚 راهنما", b"help")],
-            [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "https://t.me/n6xel")],
-            [Button.inline("🔙 برگشت به منوی اصلی", b"main_menu")]  # دکمه برگشت به منو
+            [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "https://t.me/n6xel")]  
         ]
     )
 
@@ -96,7 +92,7 @@ async def choose_language(event):
             row.append(Button.inline(languages[i + 1], languages[i + 1].encode()))
         rows.append(row)
     
-    # ارسال پیام با دکمه‌ها
+
     await event.edit(
         "**لطفاً یکی از زبان‌ها را انتخاب کنید:**", 
         buttons=rows + [
@@ -126,12 +122,12 @@ async def handle_message(event):
     chat_id = event.chat_id
     user_input = event.text.strip()
 
-    # اضافه کردن تایپینگ
+    
     async with client.action(chat_id, "typing"):
         if event.sender_id in user_states:
             lang = user_states[event.sender_id]
             
-            # بررسی معتبر بودن درخواست
+            
             is_valid = await is_code_related(user_input, event)  # اضافه کردن event
             if not is_valid:
                 await event.respond("**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**")
@@ -167,9 +163,10 @@ async def admin_panel(event):
 
 @client.on(events.NewMessage(pattern="/list_started"))
 async def list_started_users(event):
-    admin_id = 7094106651  # اید‌ی تلگرام ادمین را وارد کنید
+    admin_id = 7094106651  
     
-    if event.sender_id == admin_id:  # فقط ادمین مجاز به دیدن لیست است
+    if event.sender_id == admin_id:  
+        
         users = get_started_users()
         user_list = ""
         for user_id in users:
@@ -179,7 +176,7 @@ async def list_started_users(event):
         if not user_list:
             user_list = "**هیچ کاربری ربات را استارت نکرده است.**"
         
-        # ارسال لیست به ادمین
+        
         await event.respond(f"**لیست کاربرانی که ربات را استارت کرده‌اند:**\n\n{user_list}")
     else:
         await event.respond("**شما اجازه مشاهده این اطلاعات را ندارید.**")
@@ -286,7 +283,7 @@ async def call_api(query, user_id):
         return f"خطا در پاسخ‌گویی: {e}"
 
 async def is_code_related(text, event):
-    # نشان دادن تایپینگ
+    
     async with client.action(event.chat_id, "typing"):
         check_prompt = f'کاربر این پیام را فرستاده:\n"{text}"\n\nآیا این یک درخواست معتبر برای تولید کد برنامه‌نویسی هست؟ فقط با "yes" یا "no" جواب بده.'
         reply = await call_api(check_prompt, "validator-check")
