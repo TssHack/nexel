@@ -79,7 +79,8 @@ async def handle_message(event):
             # بررسی معتبر بودن درخواست
             is_valid = await is_code_related(user_input)
             if not is_valid:
-                await event.respond("**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**")
+                await event.respond("**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**", buttons=[
+                 Button.inline("بازگشت به منوی زبان‌ها", b"coding")])
                 del user_states[event.sender_id]
                 return
 
@@ -102,8 +103,7 @@ async def handle_message(event):
             else:
                 # در غیر این صورت پاسخ را ارسال کرده و دکمه‌ها را اضافه می‌کنیم
                 await processing.edit(response, buttons=[
-                    [Button.inline("کد جدید از زبان کنونی", b"same_lang"),
-                     Button.inline("بازگشت به منوی زبان‌ها", b"coding")]
+                 Button.inline("بازگشت به منوی زبان‌ها", b"coding")])
                 ])
 
             # پاک کردن وضعیت کاربر پس از ارسال پاسخ
