@@ -61,11 +61,14 @@ async def start(event):
     user_id = event.sender_id
     await add_user(event.sender_id)
     save_started_user(user_id)
-    await event.respond("**سلام، چطوری میتونم کمکت کنم؟**", buttons=[
+    await event.respond(
+    "**سلام، چطوری میتونم کمکت کنم؟**", 
+    buttons=[
         [Button.inline("🧬 کد نویسی", b"coding")],
-        [Button.inline("📚 راهنما", b"help")]
-        [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "t.me/@n6xel")]
-    ])
+        [Button.inline("📚 راهنما", b"help")],
+        [Button.url("🧑‍💻 ارتباط با توسعه دهنده", "https://t.me/@n6xel")]
+    ]
+)
 
 @client.on(events.CallbackQuery(data=b'coding'))
 async def choose_language(event):
