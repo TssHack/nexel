@@ -398,7 +398,8 @@ async def show_main_menu(event, edit=False):
     buttons = [
         [Button.inline(get_translation('coding_button', lang_code), b"coding")],
         [Button.inline(get_translation('help_button', lang_code), b"help")],
-        [Button.url(get_translation('developer_button', lang_code), "[https://t.me/n6xel](https://t.me/n6xel)")]
+        # خط اصلاح شده 👇
+        [Button.url(get_translation('developer_button', lang_code), "https://t.me/n6xel")]
     ]
      # Add admin panel button only for the admin
     if user_id == admin_id:
@@ -408,61 +409,27 @@ async def show_main_menu(event, edit=False):
 
     try:
         if edit:
+            # اطمینان حاصل کنید که دکمه‌ها قبل از ارسال به تابع edit معتبر هستند
             await event.edit(text, buttons=buttons)
         else:
+            # اطمینان حاصل کنید که دکمه‌ها قبل از ارسال به تابع respond معتبر هستند
             await event.respond(text, buttons=buttons)
+    except telethon.errors.rpcerrorlist.ButtonUrlInvalidError as e:
+         print(f"Button URL Invalid Error showing main menu (edit={edit}): {e}")
+         # می‌توانید اینجا یک پیام خطا به کاربر نشان دهید یا لاگ کنید
+         # یا با دکمه‌های پیش‌فرض (بدون URL مشکل‌دار) مجدد تلاش کنید
+         # Fallback if editing fails (e.g., message too old)
+         await event.respond(text) # ارسال بدون دکمه یا با دکمه‌های امن
     except Exception as e:
-        print(f"Error showing main menu (edit={edit}): {e}")
-        # Fallback if editing fails (e.g., message too old)
+        print(f"General Error showing main menu (edit={edit}): {e}")
+        # Fallback if editing fails
         if edit:
-             await event.respond(text, buttons=buttons)
+             try:
+                 await event.respond(text, buttons=buttons)
+             except Exception as resp_e:
+                 print(f"Error responding after edit failed: {resp_e}")
+                 await event.respond(text) # نهایی‌ترین fallback بدون دکمه
 
-
-@client.on(events.CallbackQuery(data=b"main_menu"))
-async def return_to_main_menu(event):
-    user_id = event.sender_id
-    # Reset coding state if returning to main menu
-    if user_id in user_states:
-        del user_states[user_id]
-    # Reset admin state if returning to main menu
-    if user_id == admin_id and user_id in admin_states:
-        del admin_states[user_id]
-    await show_main_menu(event, edit=True)
-
-@client.on(events.CallbackQuery(data=b'coding'))
-async def choose_coding_language(event):
-    user_id = event.sender_id
-    if not bot_active and user_id != admin_id:
-        await event.answer("Bot is currently disabled.", alert=True)
-        return
-
-    lang_code = await get_user_lang(user_id)
-
-    rows = []
-    # Create two buttons per row for better layout
-    langs_iter = iter(coding_languages)
-    for lang1 in langs_iter:
-        try:
-            lang2 = next(langs_iter)
-            row = [
-                Button.inline(lang1, f"select_code_{lang1}".encode()),
-                Button.inline(lang2, f"select_code_{lang2}".encode())
-            ]
-        except StopIteration:
-             row = [Button.inline(lang1, f"select_code_{lang1}".encode())]
-        rows.append(row)
-
-    # Add back button
-    rows.append([Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")])
-
-    try:
-        await event.edit(
-            get_translation('choose_coding_lang', lang_code),
-            buttons=rows
-        )
-    except Exception as e:
-        print(f"Error editing for coding language choice: {e}")
-        await event.respond(get_translation('choose_coding_lang', lang_code), buttons=rows) # Fallback
 
 
 @client.on(events.CallbackQuery(pattern=b"select_code_(.*)"))
