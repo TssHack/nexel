@@ -2,7 +2,7 @@
 from telethon import TelegramClient, events, Button
 import aiosqlite
 import json
-import requests # Using requests synchronously within asyncio via run_in_executor
+import requests
 import asyncio
 import os
 
@@ -253,7 +253,7 @@ async def add_user_to_db(user_id):
             """)
             # Insert or ignore if user already exists
             await db.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
-            # Update last seen time upon interaction
+            # Update last seen time
             await db.execute("UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE user_id = ?", (user_id,))
             await db.commit()
     except Exception as e:
@@ -288,16 +288,15 @@ async def get_all_user_ids_from_db():
 
 async def call_api(query, user_id):
     """Calls the external API to get code."""
-    lang_code = await get_user_lang(user_id) # Get language for potential error messages
     try:
-        url = "[https://api.binjie.fun/api/generateStream](https://api.binjie.fun/api/generateStream)"
+        url = "https://api.binjie.fun/api/generateStream"
         headers = {
             "authority": "api.binjie.fun",
             "accept": "application/json, text/plain, */*",
             "accept-encoding": "gzip, deflate, br",
             "accept-language": "en-US,en;q=0.9", # Keep consistent or vary if needed
-            "origin": "[https://chat18.aichatos.xyz](https://chat18.aichatos.xyz)",
-            "referer": "[https://chat18.aichatos.xyz/](https://chat18.aichatos.xyz/)",
+            "origin": "https://chat18.aichatos.xyz",
+            "referer": "https://chat18.aichatos.xyz/",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36", # Updated UA
             "Content-Type": "application/json"
         }
@@ -311,43 +310,34 @@ async def call_api(query, user_id):
             "stream": False # Get full response at once
         }
         # Increased timeout
-        # Use run_in_executor to run the synchronous requests call in a separate thread
-        loop = asyncio.get_event_loop()
-        res = await loop.run_in_executor(
-            None, # Use default executor
-            lambda: requests.post(url, headers=headers, json=data, timeout=30) # Timeout set to 30 seconds
-        )
-        res.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-        res.encoding = 'utf-8' # Ensure correct encoding
-        return res.text.strip()
-    except requests.exceptions.Timeout:
-        print(f"API Request Timeout for user {user_id}")
-        return get_translation('api_error', lang_code, e="Request timed out.")
+        async with requests.Session() as session:
+             # Use async context for requests if using an async library like httpx
+             # For standard requests, run in executor
+             loop = asyncio.get_event_loop()
+             res = await loop.run_in_executor(None, lambda: requests.post(url, headers=headers, json=data, timeout=30))
+             res.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
+             res.encoding = 'utf-8' # Ensure correct encoding
+             return res.text.strip()
     except requests.exceptions.RequestException as e:
-        print(f"API Request Error for user {user_id}: {e}")
+        print(f"API Request Error: {e}")
+        lang_code = await get_user_lang(user_id)
         return get_translation('api_error', lang_code, e=e)
     except Exception as e:
-        print(f"API Call General Error for user {user_id}: {e}")
+        print(f"API Call General Error: {e}")
+        lang_code = await get_user_lang(user_id)
         return get_translation('api_error', lang_code, e=e)
 
-# --- START: Replaced Function ---
+
 async def is_code_related(text, event):
-    """Checks if the user's text is a valid request for code generation using the Persian prompt."""
-    lang_code = await get_user_lang(event.sender_id)
     async with client.action(event.chat_id, "typing"):
-        # Using the Persian prompt as requested
         check_prompt = f'کاربر این پیام را فرستاده:\n"{text}"\n\nآیا این یک درخواست معتبر برای تولید کد برنامه‌نویسی هست؟ فقط با "yes" یا "no" جواب بده.'
         try:
-            # Using a distinct ID for validation calls as requested
             reply = await call_api(check_prompt, "validator-check")
-            # Simple check if "yes" (case-insensitive) is in the reply
             return "yes" in reply.lower()
         except Exception as e:
-            print(f"Error during code related check: {e}")
-            # Notify the user about the error during the check
-            await event.respond(get_translation('error_generic', lang_code))
-            return False # Default to false on error during check
-# --- END: Replaced Function ---
+            print(f"خطا در بررسی درخواست کدنویسی: {e}")
+            await event.respond("خطایی رخ داد. لطفاً بعداً دوباره امتحان کنید.")
+            return False # Default to false on error
 
 # --- Event Handlers ---
 
@@ -363,12 +353,10 @@ async def start(event):
     # Reset any previous state
     if user_id in user_states: del user_states[user_id]
     if user_id in admin_states: del admin_states[user_id] # Clear admin state too
-    # Reset language preference, force re-selection on /start
-    if user_id in user_interface_language: del user_interface_language[user_id]
 
     # Ask for language selection
     await event.respond(
-        get_translation('start_choose_lang', 'fa'), # Initial prompt always shows language options
+        get_translation('start_choose_lang', 'fa'), # Initial prompt in Persian
         buttons=[
             [Button.inline("🇮🇷 فارسی", b"set_lang_fa"), Button.inline("🇬🇧 English", b"set_lang_en")],
             [Button.inline("🇷🇺 Русский", b"set_lang_ru"), Button.inline("🇹🇷 Türkçe", b"set_lang_tr")]
@@ -384,7 +372,6 @@ async def set_language(event):
         lang_code = 'fa' # Default to Persian if invalid code
 
     user_interface_language[user_id] = lang_code
-    await event.answer() # Acknowledge the button press
 
     # Show main menu in the selected language
     await show_main_menu(event, edit=True)
@@ -398,7 +385,6 @@ async def show_main_menu(event, edit=False):
     buttons = [
         [Button.inline(get_translation('coding_button', lang_code), b"coding")],
         [Button.inline(get_translation('help_button', lang_code), b"help")],
-        # خط اصلاح شده 👇
         [Button.url(get_translation('developer_button', lang_code), "https://t.me/n6xel")]
     ]
      # Add admin panel button only for the admin
@@ -407,55 +393,61 @@ async def show_main_menu(event, edit=False):
 
     text = get_translation('welcome', lang_code)
 
-    try:
-        if edit:
-            # اطمینان حاصل کنید که دکمه‌ها قبل از ارسال به تابع edit معتبر هستند
-            await event.edit(text, buttons=buttons)
-        else:
-            # اطمینان حاصل کنید که دکمه‌ها قبل از ارسال به تابع respond معتبر هستند
-            await event.respond(text, buttons=buttons)
-    except telethon.errors.rpcerrorlist.ButtonUrlInvalidError as e:
-         print(f"Button URL Invalid Error showing main menu (edit={edit}): {e}")
-         # می‌توانید اینجا یک پیام خطا به کاربر نشان دهید یا لاگ کنید
-         # یا با دکمه‌های پیش‌فرض (بدون URL مشکل‌دار) مجدد تلاش کنید
-         # Fallback if editing fails (e.g., message too old)
-         await event.respond(text) # ارسال بدون دکمه یا با دکمه‌های امن
-    except Exception as e:
-        print(f"General Error showing main menu (edit={edit}): {e}")
-        # Fallback if editing fails
-        if edit:
-             try:
-                 await event.respond(text, buttons=buttons)
-             except Exception as resp_e:
-                 print(f"Error responding after edit failed: {resp_e}")
-                 await event.respond(text) # نهایی‌ترین fallback بدون دکمه
+    if edit:
+        await event.edit(text, buttons=buttons)
+    else:
+        await event.respond(text, buttons=buttons)
 
+@client.on(events.CallbackQuery(data=b"main_menu"))
+async def return_to_main_menu(event):
+    # Reset coding state if returning to main menu
+    if event.sender_id in user_states:
+        del user_states[event.sender_id]
+    await show_main_menu(event, edit=True)
 
+@client.on(events.CallbackQuery(data=b'coding'))
+async def choose_coding_language(event):
+    if not bot_active and event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    lang_code = await get_user_lang(event.sender_id)
+
+    rows = []
+    # Create two buttons per row
+    for i in range(0, len(coding_languages), 2):
+        row = [Button.inline(coding_languages[i], f"select_code_{coding_languages[i]}".encode())]
+        if i + 1 < len(coding_languages):
+            row.append(Button.inline(coding_languages[i + 1], f"select_code_{coding_languages[i+1]}".encode()))
+        rows.append(row)
+
+    # Add back button
+    rows.append([Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")])
+
+    await event.edit(
+        get_translation('choose_coding_lang', lang_code),
+        buttons=rows
+    )
 
 @client.on(events.CallbackQuery(pattern=b"select_code_(.*)"))
 async def handle_coding_language_selection(event):
-    user_id = event.sender_id
-    if not bot_active and user_id != admin_id:
-        await event.answer("Bot is currently disabled.", alert=True)
+    if not bot_active and event.sender_id != admin_id:
+        await event.answer()
         return
 
     selected_lang = event.pattern_match.group(1).decode('utf-8')
+    user_id = event.sender_id
     lang_code = await get_user_lang(user_id) # UI language
 
     if selected_lang in coding_languages:
         user_states[user_id] = selected_lang # Store the *coding* language state
-        await event.answer(f"{selected_lang} selected!") # Quick feedback
-        try:
-            await event.edit(
-                get_translation('coding_lang_selected', lang_code, lang=selected_lang),
-                buttons=[
-                    Button.inline(get_translation('back_to_lang_menu', lang_code), b"coding"),
-                    Button.inline(get_translation('main_menu_button', lang_code), b"main_menu") # Added main menu return
-                    ]
-            )
-        except Exception as e:
-             print(f"Error editing after language selection: {e}")
-             # Don't resend message here, answer is enough feedback
+        await event.edit(
+            get_translation('coding_lang_selected', lang_code, lang=selected_lang),
+            buttons=[
+                Button.inline(get_translation('back_to_lang_menu', lang_code), b"coding"),
+                Button.inline(get_translation('main_menu_button', lang_code), b"main_menu") # Added main menu return
+                ]
+        )
     else:
          # Should not happen with buttons, but handle defensively
         await event.answer("Invalid language selected.", alert=True)
@@ -471,17 +463,13 @@ async def show_help(event):
     help_message = get_translation('help_title', lang_code) + "\n\n" + \
                    get_translation('help_text', lang_code, coding_button=get_translation('coding_button', lang_code))
 
-    try:
-        await event.edit(
-            help_message,
-            buttons=[
-                [Button.inline(get_translation('start_coding_button', lang_code), b"coding")],
-                [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
-            ]
-        )
-    except Exception as e:
-        print(f"Error editing help message: {e}")
-        await event.respond(help_message, buttons=[[Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]]) # Fallback
+    await event.edit(
+        help_message,
+        buttons=[
+            [Button.inline(get_translation('start_coding_button', lang_code), b"coding")],
+            [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
+        ]
+    )
 
 # --- Admin Panel ---
 
@@ -489,9 +477,6 @@ async def show_help(event):
 async def admin_command(event):
     """Handles the /admin command to show the panel."""
     if event.sender_id == admin_id:
-        # Reset admin state when explicitly calling /admin
-        if admin_id in admin_states:
-            del admin_states[admin_id]
         await show_admin_panel(event)
     else:
         lang_code = await get_user_lang(event.sender_id)
@@ -502,19 +487,16 @@ async def admin_command(event):
 async def admin_panel_callback(event):
     """Handles the callback button to show the panel."""
     if event.sender_id == admin_id:
-         # Reset admin state when returning to panel via button
-        if admin_id in admin_states:
-            del admin_states[admin_id]
         await show_admin_panel(event, edit=True)
     else:
         # Ignore silently or show 'not allowed' message
-        await event.answer(get_translation('admin_not_allowed', await get_user_lang(event.sender_id)), alert=True)
+        await event.answer()
 
 
 async def show_admin_panel(event, edit=False):
     """Displays the admin panel with buttons."""
     lang_code = await get_user_lang(admin_id) # Admin panel uses admin's language pref
-    text = f"**{get_translation('admin_panel_title', lang_code)}**\n\n{get_translation('admin_panel_desc', lang_code)}\n`Bot Status: {'ON' if bot_active else 'OFF'}`"
+    text = f"**{get_translation('admin_panel_title', lang_code)}**\n\n{get_translation('admin_panel_desc', lang_code)}"
 
     buttons = [
         [
@@ -528,16 +510,15 @@ async def show_admin_panel(event, edit=False):
         [ Button.inline(get_translation('main_menu_button', lang_code), b"main_menu") ] # Back to main menu
     ]
 
-    try:
-        if edit:
-            await event.edit(text, buttons=buttons, parse_mode='md')
-        else:
-             await event.respond(text, buttons=buttons, parse_mode='md')
-    except Exception as e:
-        print(f"Error showing admin panel (edit={edit}): {e}")
-        # Fallback to sending a new message if edit fails
-        if edit:
-            await event.respond(text, buttons=buttons, parse_mode='md')
+    if edit:
+        try:
+            await event.edit(text, buttons=buttons)
+        except Exception as e:
+            print(f"Error editing message for admin panel: {e}")
+            # Fallback to sending a new message if edit fails
+            await event.respond(text, buttons=buttons)
+    else:
+         await event.respond(text, buttons=buttons)
 
 
 @client.on(events.CallbackQuery(data=b"admin_set_on"))
@@ -547,10 +528,10 @@ async def admin_turn_on(event):
         bot_active = True
         lang_code = await get_user_lang(admin_id)
         await event.answer(get_translation('admin_bot_on_msg', lang_code), alert=True)
-        # Update the panel message to reflect the new status
-        await show_admin_panel(event, edit=True)
+        # Optionally update the panel message or buttons if needed
+        # await show_admin_panel(event, edit=True)
     else:
-        await event.answer(get_translation('admin_not_allowed', await get_user_lang(event.sender_id)), alert=True)
+        await event.answer() # Ignore for non-admins
 
 
 @client.on(events.CallbackQuery(data=b"admin_set_off"))
@@ -560,54 +541,43 @@ async def admin_turn_off(event):
         bot_active = False
         lang_code = await get_user_lang(admin_id)
         await event.answer(get_translation('admin_bot_off_msg', lang_code), alert=True)
-        # Update the panel message to reflect the new status
-        await show_admin_panel(event, edit=True)
+        # await show_admin_panel(event, edit=True)
     else:
-        await event.answer(get_translation('admin_not_allowed', await get_user_lang(event.sender_id)), alert=True)
+        await event.answer()
 
 
 @client.on(events.CallbackQuery(data=b"admin_list_users"))
 async def admin_list_users(event):
     if event.sender_id != admin_id:
-        await event.answer(get_translation('admin_not_allowed', await get_user_lang(event.sender_id)), alert=True)
+        await event.answer()
         return
 
     lang_code = await get_user_lang(admin_id)
     await event.answer("⏳ Fetching users...") # Give feedback
 
-    back_button = [ Button.inline("🔙 Back to Admin Panel", b"admin_panel") ]
-
     try:
         async with aiosqlite.connect(db_file) as db:
-            # Fetch users ordered by last seen, newest first
-            async with db.execute("SELECT user_id, username, first_name, strftime('%Y-%m-%d %H:%M:%S', last_seen) FROM users ORDER BY last_seen DESC") as cursor:
+            async with db.execute("SELECT user_id, username, first_name, last_seen FROM users ORDER BY last_seen DESC") as cursor:
                 users = await cursor.fetchall()
 
         if not users:
-            await event.edit(get_translation('admin_no_users', lang_code), buttons=[ back_button ])
+            await event.edit(get_translation('admin_no_users', lang_code), buttons=[ Button.inline("🔙 Back", b"admin_panel") ])
             return
 
         user_list_text = get_translation('admin_list_users_title', lang_code, count=len(users))
-        max_users_to_display = 50 # Limit display to avoid message length issues initially
-        displayed_count = 0
         for user_id, username, first_name, last_seen in users:
-            if displayed_count >= max_users_to_display:
-                user_list_text += f"\n... (and {len(users) - displayed_count} more users)"
-                break
-
             display_name = first_name if first_name else f"User_{user_id}"
-            user_list_text += f"👤 `{user_id}` - @{username if username else 'N/A'} ({display_name}) - Seen: {last_seen}\n"
-            displayed_count += 1
+            user_list_text += f"👤 `{user_id}` - @{username if username else 'N/A'} ({display_name}) - Seen: {last_seen.split('.')[0]}\n" # Nicer formatting
 
-        # Handle potential message too long error (though limited display helps)
+        # Handle potential message too long error for large user lists
         if len(user_list_text) > 4000:
-             user_list_text = user_list_text[:4000] + "\n... (list truncated due to length)"
+             user_list_text = user_list_text[:4000] + "\n... (list truncated)"
 
-        await event.edit(user_list_text, buttons=[ back_button ], parse_mode='md')
+        await event.edit(user_list_text, buttons=[ Button.inline("🔙 Back", b"admin_panel") ], parse_mode='md')
 
     except Exception as e:
         print(f"Error listing users: {e}")
-        await event.edit(f"Error fetching users: {e}", buttons=[ back_button ])
+        await event.edit(f"Error fetching users: {e}", buttons=[ Button.inline("🔙 Back", b"admin_panel") ])
 
 
 @client.on(events.CallbackQuery(data=b"admin_broadcast"))
@@ -615,16 +585,12 @@ async def admin_ask_broadcast(event):
     if event.sender_id == admin_id:
         lang_code = await get_user_lang(admin_id)
         admin_states[admin_id] = 'awaiting_broadcast_message' # Set admin state
-        try:
-            await event.edit(
-                get_translation('admin_ask_broadcast', lang_code),
-                buttons=[ Button.inline("🔙 Cancel", b"admin_panel") ] # Allow cancellation
-            )
-        except Exception as e:
-            print(f"Error editing for broadcast prompt: {e}")
-            await event.respond(get_translation('admin_ask_broadcast', lang_code), buttons=[ Button.inline("🔙 Cancel", b"admin_panel") ])
+        await event.edit(
+            get_translation('admin_ask_broadcast', lang_code),
+            buttons=[ Button.inline("🔙 Cancel", b"admin_panel") ] # Allow cancellation
+        )
     else:
-        await event.answer(get_translation('admin_not_allowed', await get_user_lang(event.sender_id)), alert=True)
+        await event.answer()
 
 
 # --- Main Message Handler ---
@@ -800,8 +766,6 @@ async def handle_message(event):
          )
 
 
-
-
 # --- Bot Startup ---
 async def main():
     """Connects the client and runs indefinitely."""
@@ -815,9 +779,6 @@ async def main():
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        # Optional: Add indexes for faster lookups if needed
-        # await db.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON users(user_id);")
-        # await db.execute("CREATE INDEX IF NOT EXISTS idx_last_seen ON users(last_seen);")
         await db.commit()
         print("Database initialized.")
 
@@ -827,18 +788,7 @@ async def main():
     print(f"Bot '{me.first_name}' started...")
     print(f"Admin ID: {admin_id}")
     print(f"Bot active: {bot_active}")
-    print("Bot is running...")
     await client.run_until_disconnected()
-    print("Bot stopped.")
 
 if __name__ == '__main__':
-    # Ensure necessary directories exist (if session file needs one)
-    session_dir = os.path.dirname(session_name)
-    if session_dir and not os.path.exists(session_dir):
-        os.makedirs(session_dir)
-
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("Bot stopping via KeyboardInterrupt...")
-
+    asyncio.run(main())
