@@ -288,7 +288,6 @@ async def get_all_user_ids_from_db():
         return []
 
 async def call_api(query, user_id):
-    """Calls the external API to get code."""
     try:
         url = "https://api.binjie.fun/api/generateStream"
         headers = {
@@ -312,10 +311,8 @@ async def call_api(query, user_id):
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=data, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                if response.status != 200:
-                    raise Exception(f"HTTP {response.status}: {await response.text()}")
-                result = await response.json()
-                return result.get("text", "").strip()  # اگر فیلد "text" هست، برگردون
+                text = await response.text()
+                return text.strip()  # فقط متن رو برمی‌گردونه
 
     except Exception as e:
         print(f"API Error: {e}")
