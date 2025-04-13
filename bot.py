@@ -310,7 +310,9 @@ async def call_api(query, user_id):
             "stream": False # Get full response at once
         }
         # Increased timeout
-        async with requests.Session() as session:
+        async with aiohttp.ClientSession() as session:
+    async with session.post(url, json=data) as response:
+        result = await response.json()
              # Use async context for requests if using an async library like httpx
              # For standard requests, run in executor
              loop = asyncio.get_event_loop()
