@@ -674,11 +674,12 @@ async def handle_message(event):
 
     user_input = user_input.strip()
 
-    # 0. Ensure user is in DB and update last seen/details
+    # 0. Ensure user is in DB and update last seen/details (Important for users interacting without /start first)
+    # Note: This might run slightly redundantly if /start was just called, but it's harmless and ensures DB presence.
     await add_user_to_db(user_id)
     asyncio.create_task(update_user_details(user_id)) # Update details in background
 
-    # 1. Handle Admin Broadcast Input
+    # 1. Handle Admin Broadcast Input FIRST
     if user_id == admin_id and admin_states.get(user_id) == 'awaiting_broadcast_message':
         lang_code = await get_user_lang(admin_id)
         broadcast_text = user_input # The message sent by admin is the broadcast content
@@ -695,10 +696,9 @@ async def handle_message(event):
         failed_count = 0
         status_message = await event.respond(get_translation('admin_broadcast_sending', lang_code, count=count))
 
-        # Create tasks for sending messages concurrently (with rate limiting)
+        # ... (rest of broadcast logic remains the same) ...
         tasks = []
         for target_user_id in user_ids:
-            # Define coroutine for sending message to one user
             async def send_to_user(uid, text):
                 nonlocal sent_count, failed_count
                 try:
@@ -706,61 +706,42 @@ async def handle_message(event):
                     return True
                 except Exception as e:
                     print(f"Failed to send broadcast to {uid}: {e}")
-                    # Optional: Handle specific errors like UserIsBlockedError, PeerIdInvalidError
-                    # You might want to remove users who block the bot or have deleted accounts
-                    # Example (requires importing errors from telethon.errors.rpcerrorlist):
-                    # from telethon.errors.rpcerrorlist import UserIsBlockedError, PeerIdInvalidError
-                    # if isinstance(e, (UserIsBlockedError, PeerIdInvalidError)):
-                    #     try:
-                    #         async with aiosqlite.connect(db_file) as db:
-                    #             await db.execute("DELETE FROM users WHERE user_id = ?", (uid,))
-                    #             await db.commit()
-                    #             print(f"Removed inactive user {uid} from database.")
-                    #     except Exception as db_err:
-                    #         print(f"Error removing user {uid}: {db_err}")
                     return False
 
             tasks.append(send_to_user(target_user_id, broadcast_text))
-            # Simple rate limiting: wait a bit after adding each task
-            if len(tasks) % 20 == 0: # Pause every 20 users
+            if len(tasks) % 20 == 0:
                 await asyncio.sleep(1)
 
-        # Run all send tasks
         results = await asyncio.gather(*tasks)
-
         sent_count = sum(1 for r in results if r)
         failed_count = count - sent_count
-
         result_message = get_translation('admin_broadcast_sent', lang_code) + f" ({sent_count} successful)"
         if failed_count > 0:
             result_message += f"\n{get_translation('admin_broadcast_failed', lang_code)} ({failed_count} failures)"
-
         try:
             await status_message.edit(result_message)
         except Exception as e:
             print(f"Error editing broadcast status message: {e}")
-            await event.respond(result_message) # Send as new message if edit fails
-
-        await asyncio.sleep(3) # Show result briefly
-        await show_admin_panel(event) # Go back to admin panel
+            await event.respond(result_message)
+        await asyncio.sleep(3)
+        await show_admin_panel(event)
         return # Stop further processing
+
 
     # 2. Ignore messages if bot is off (except for admin)
     if not bot_active and user_id != admin_id:
-        # Maybe send a message? Optional.
-        # lang_code = await get_user_lang(user_id)
-        # await event.respond(get_translation('admin_bot_off_msg', lang_code)) # Inform user?
         return
 
-    # 3. Ignore commands (handled by specific handlers), except /start
-    # Allow callbacks to be processed by their handlers
-    if user_input.startswith('/') and user_input != '/start':
-        # Let specific command handlers (like /admin) work
-        # If no specific handler exists, it will be ignored anyway.
-        return
+    # 3. Ignore ALL commands here (they should be handled by specific handlers like @client.on(events.NewMessage(pattern='/start')))
+    # This prevents processing commands like /start or /admin in this general handler.
+    if user_input.startswith('/'):
+        return # Exit if it's any command, let specific handlers deal with them.
 
-    # --- Handle cases where the user hasn't selected a language yet ---
-    # This happens if they send a message right after /start before clicking a language button
+
+    # --- Now, handle regular text messages ---
+
+    # 4. Handle cases where the user hasn't selected a language yet
+    # This check should now ONLY run for non-command messages if the language isn't set.
     if user_id not in user_interface_language:
          await event.respond(
              get_translation('start_choose_lang', 'fa'), # Ask again
@@ -772,119 +753,86 @@ async def handle_message(event):
          return
 
 
-    # 4. Handle Coding Requests (if user is in a coding state)
+    # 5. Handle Coding Requests (if user is in a coding state)
     if user_id in user_states:
         coding_lang = user_states[user_id]
         lang_code = await get_user_lang(user_id) # UI Language
 
-        # Put the processing behind a typing indicator
         async with client.action(chat_id, "typing"):
             # --- Step 1: Validate if the message is code-related ---
             is_valid = await is_code_related(user_input, event)
             if not is_valid:
-                # is_code_related might have already sent an error message on failure
-                # Only send invalid_request if the check itself didn't fail
-                if "validator-check" not in str(user_id): # Avoid sending to the validator call itself
+                if "validator-check" not in str(user_id):
                    await event.respond(get_translation('invalid_request', lang_code))
-                # Keep the user in the selected language state for another try
                 return
 
             # --- Step 2: Construct prompt and call the main API ---
-            # Make the prompt clearer for the AI
             prompt = f"Please generate ONLY the {coding_lang} code based on the following request. Do not include explanations, greetings, or markdown formatting like ``` unless it's part of the code itself.\n\nRequest:\n{user_input}"
-
             processing_msg = await event.respond(get_translation('processing', lang_code))
-
-            response = await call_api(prompt, user_id) # Pass user_id for API context
+            response = await call_api(prompt, user_id)
 
             # --- Step 3: Process and Clean the Response ---
-            cleaned_response = response # Start with the raw response
-
-            # Check for API error messages returned in the response text
+            cleaned_response = response
             if cleaned_response.startswith("Error getting response:") or cleaned_response.startswith("خطا در"):
-                 await processing_msg.edit(cleaned_response) # Show the specific API error
+                 await processing_msg.edit(cleaned_response)
                  return
-
-            # Basic cleaning: remove potential markdown backticks added by the API unnecessarily
             if cleaned_response.startswith("```") and cleaned_response.endswith("```"):
                 cleaned_response = cleaned_response[3:-3].strip()
-                # Remove potential language hint right after starting backticks
                 lines = cleaned_response.split('\n', 1)
                 if len(lines) > 1 and lines[0].strip().lower() in [l.lower() for l in coding_languages + list(ext_map.values())]:
                     cleaned_response = lines[1].strip()
-
-            # If still empty after cleaning or initial check, treat as error
             if not cleaned_response:
                  await processing_msg.edit(get_translation('api_error', lang_code, e="API returned an empty response."))
                  return
 
             # --- Step 4: Send the result (file or message) ---
+            # ... (rest of file/message sending logic remains the same) ...
             final_caption_or_message = ""
             buttons_after_code = [
                  Button.inline(get_translation('back_to_lang_menu', lang_code), b"coding"),
                  Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")
             ]
-
-            # Check length for sending as file vs message
-            if len(cleaned_response) > 3900: # Telegram message limit safety margin
+            if len(cleaned_response) > 3900:
                 ext = ext_map.get(coding_lang, "txt")
-                # Sanitize filename slightly
                 safe_lang = ''.join(c for c in coding_lang if c.isalnum())
                 filename = f"code_{safe_lang}_{user_id}.{ext}"
                 try:
-                    with open(filename, "w", encoding="utf-8") as f:
-                        f.write(cleaned_response)
-
+                    with open(filename, "w", encoding="utf-8") as f: f.write(cleaned_response)
                     final_caption_or_message = get_translation('code_too_long', lang_code, lang=coding_lang)
-                    await client.send_file(
-                        event.chat_id,
-                        filename,
-                        caption=final_caption_or_message,
-                        buttons=buttons_after_code, # Attach buttons to the file message
-                        reply_to=event.message.id
-                        )
-                    await processing_msg.delete() # Delete "processing" message
-
+                    await client.send_file(event.chat_id, filename, caption=final_caption_or_message, buttons=buttons_after_code, reply_to=event.message.id)
+                    await processing_msg.delete()
                 except Exception as e:
                     print(f"Error sending file: {e}")
                     await processing_msg.edit(f"{get_translation('error_generic', lang_code)}\nError sending code as file: {e}")
                 finally:
                     if os.path.exists(filename):
-                        try:
-                            os.remove(filename) # Clean up the file
-                        except OSError as e:
-                            print(f"Error removing temporary file {filename}: {e}")
+                        try: os.remove(filename)
+                        except OSError as e: print(f"Error removing temporary file {filename}: {e}")
             else:
-                # Format as code block for shorter messages
                 formatted_response = f"```\n{cleaned_response}\n```"
                 final_caption_or_message = f"{get_translation('code_ready', lang_code, lang=coding_lang)}\n{formatted_response}"
                 try:
-                    await processing_msg.edit(
-                         final_caption_or_message,
-                         buttons=buttons_after_code,
-                         parse_mode='md' # Ensure markdown is parsed for the code block
-                    )
+                    await processing_msg.edit(final_caption_or_message, buttons=buttons_after_code, parse_mode='md')
                 except Exception as e:
                      print(f"Error editing final code message: {e}")
-                     # Fallback: send as new message if edit fails
                      await event.respond(final_caption_or_message, buttons=buttons_after_code, parse_mode='md')
-                     await processing_msg.delete() # Delete processing message if we sent a new one
+                     await processing_msg.delete()
 
 
-            # Decide whether to clear the coding state after providing code.
-            # Keeping it (commented out) allows follow-up questions in the same language.
-            # del user_states[user_id]
+    # 6. If message wasn't a command, wasn't broadcast input, language IS set, but user is NOT in a coding state:
+    # This means the user sent random text after selecting a language but before selecting a coding language.
+    elif user_id not in user_states: # Check if NOT in coding state
+         lang_code = await get_user_lang(user_id)
+         # Gently guide them to the coding section or main menu
+         await event.respond(
+             f"{get_translation('welcome', lang_code)}\n\nلطفاً از دکمه '{get_translation('coding_button', lang_code)}' برای شروع کدنویسی استفاده کنید یا به منوی اصلی بازگردید.",
+             buttons=[
+                 [Button.inline(get_translation('coding_button', lang_code), b"coding")],
+                 [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
+             ]
+         )
 
-    # 5. If not an admin action and not a coding request in progress,
-    # potentially guide the user if they sent random text? (Optional)
-    # else:
-    #     if user_id != admin_id: # Don't bother the admin with this
-    #         lang_code = await get_user_lang(user_id)
-    #         # Check if it was a command handled elsewhere or just random text
-    #         if not user_input.startswith('/'):
-    #              # Maybe gently guide them?
-    #              # await event.respond(f"Please use the buttons or select a coding language first.\n{get_translation('welcome', lang_code)}")
-    #              pass # Or just ignore
+
 
 
 # --- Bot Startup ---
