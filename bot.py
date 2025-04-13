@@ -4,6 +4,7 @@ import aiosqlite
 import json
 import requests
 import asyncio
+import aiohttp
 import os
 
 # --- Configuration ---
