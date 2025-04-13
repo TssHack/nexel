@@ -295,38 +295,30 @@ async def call_api(query, user_id):
             "authority": "api.binjie.fun",
             "accept": "application/json, text/plain, */*",
             "accept-encoding": "gzip, deflate, br",
-            "accept-language": "en-US,en;q=0.9", # Keep consistent or vary if needed
+            "accept-language": "en-US,en;q=0.9",
             "origin": "https://chat18.aichatos.xyz",
             "referer": "https://chat18.aichatos.xyz/",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36", # Updated UA
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
             "Content-Type": "application/json"
         }
-        # Ensure userId is a string as observed in some APIs
         data = {
             "prompt": query,
-            "userId": f"#/{str(user_id)}", # Format might be important
+            "userId": f"#/{str(user_id)}",
             "network": True,
-            "system": "", # Add system prompt if beneficial
-            "withoutContext": False, # Maintain context if useful
-            "stream": False # Get full response at once
+            "system": "",
+            "withoutContext": False,
+            "stream": False
         }
-        # Increased timeout
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=data) as response:
+            async with session.post(url, json=data, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                if response.status != 200:
+                    raise Exception(f"HTTP {response.status}: {await response.text()}")
                 result = await response.json()
-             # Use async context for requests if using an async library like httpx
-             # For standard requests, run in executor
-             loop = asyncio.get_event_loop()
-             res = await loop.run_in_executor(None, lambda: requests.post(url, headers=headers, json=data, timeout=30))
-             res.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-             res.encoding = 'utf-8' # Ensure correct encoding
-             return res.text.strip()
-    except requests.exceptions.RequestException as e:
-        print(f"API Request Error: {e}")
-        lang_code = await get_user_lang(user_id)
-        return get_translation('api_error', lang_code, e=e)
+                return result.get("text", "").strip()  # اگر فیلد "text" هست، برگردون
+
     except Exception as e:
-        print(f"API Call General Error: {e}")
+        print(f"API Error: {e}")
         lang_code = await get_user_lang(user_id)
         return get_translation('api_error', lang_code, e=e)
 
