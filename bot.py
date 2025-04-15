@@ -56,8 +56,8 @@ ext_map = {
 # --- Multilingual Text (Updated) ---
 translations = {
     'fa': {
-        'start_welcome': "**سلام! خوش آمدید.**\nزبان پیش‌فرض انگلیسی است. برای تغییر زبان یا تنظیمات دیگر، از دکمه 'Settings' استفاده کنید.", # Welcome on first start
-        'welcome': "**سلام، چطوری میتونم کمکت کنم؟**\nمدل فعال: {ai_model_name}",
+        'start_welcome': 'start_welcome': "🌟 **سلام! خوش اومدی دوست عزیز 😊**\n\n🗣️ زبان پیش‌فرض: **فارسی** 🇮🇷\n\n⚙️ برای تغییر زبان یا تنظیمات دیگه، از دکمه‌ی 'Settings ⚙️' استفاده کن!\n\n✨ با آرزوی تجربه‌ای دلچسب و هوشمند ✨", # Welcome on first start
+        'welcome': 'chat_welcome': "👋 **سلام، چطوری می‌تونم کمکت کنم؟** 😊\n🤖 مدل فعال: `{ai_model_name}`",
         'settings_button': "⚙️ تنظیمات",
         'coding_button': "🧬 کد نویسی",
         'chat_button': "💬 چت با AI",
@@ -71,26 +71,28 @@ translations = {
         'settings_model_button': "🧠 انتخاب مدل AI",
         'settings_lang_selected': "✅ زبان به فارسی تغییر کرد.",
         'settings_model_selected': "✅ مدل AI به {model_name} تغییر کرد.",
-        'choose_coding_lang': "**لطفاً یکی از زبان‌های برنامه‌نویسی را انتخاب کنید:**",
-        'coding_lang_selected': "زبان برنامه‌نویسی: {lang}\nمدل AI: {ai_model_name}\n\n**سوالت رو بپرس برات کدشو بنویسم.**",
+        'choose_coding_lang': "💻 **لطفاً یکی از زبان‌های برنامه‌نویسی را انتخاب کن:** 🧠👇",
+        'coding_lang_selected': "✅ زبان برنامه‌نویسی انتخاب‌شده: `{lang}`\n🤖 مدل هوش مصنوعی فعال: `{ai_model_name}`\n\n🧑‍💻 **حالا سوالت رو بپرس تا برات کدش رو بنویسم!** 🚀",
         'back_to_lang_menu': "زبان‌های دیگر",
         'back_to_settings': "🔙 بازگشت به تنظیمات",
-        'processing': "**در حال پردازش... لطفاً صبر کن.**",
-        'code_ready': "کدت آماده‌ست (زبان: {lang}, مدل: {ai_model_name})",
-        'code_too_long': "کدت آماده‌ست و به صورت فایل ارسال شد (زبان: {lang}, مدل: {ai_model_name})",
+        'processing': "⏳ **در حال پردازش... لطفاً چند لحظه صبر کن.**",
+        'code_ready': "✅ **کدت آماده‌ست!**\n🧑‍💻 زبان: `{lang}` | 🤖 مدل: `{ai_model_name}`",
+        'code_too_long': "📄 **کدت خیلی طولانی بود، به‌صورت فایل برات فرستادم.**\n🧑‍💻 زبان: `{lang}` | 🤖 مدل: `{ai_model_name}`",
         'new_question_button': "❓ سوال جدید ({lang})",
         'api_error': "خطا در ارتباط با API: {e}",
         'api_error_specific': "خطا در پردازش توسط مدل {model_name}: {e}",
         'empty_response_error': "مدل {model_name} پاسخی برنگرداند.",
-        'invalid_request': "**پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**",
-        'invalid_request_help': "**راهنمایی:** لطفاً درخواست خود را واضح و مربوط به تولید کد در زبان '{lang}' بیان کنید. مثلاً:\n`یک تابع پایتون بنویس که دو عدد را جمع کند.`",
+        'invalid_request': "⚠️ **پیامت مربوط به برنامه‌نویسی نیست یا نمی‌تونم براش کدی بنویسم.**",
+        'invalid_request_help': "📝 **راهنمایی:** لطفاً درخواستت رو واضح و مرتبط با تولید کد در زبان `{lang}` بنویس.\n\nمثال:\n`یک تابع پایتون بنویس که دو عدد رو با هم جمع کنه.`",
         'retry_button': "🔄 تلاش مجدد",
         'help_title': "**🌟 راهنمای استفاده از ربات 🌟**",
         'help_text': """
 1️⃣ **انتخاب زبان برنامه‌نویسی**: روی دکمه '{coding_button}' کلیک کرده و یک زبان را انتخاب کنید.
 2️⃣ **ارسال سوال**: سوال برنامه‌نویسی خود را بنویسید.
 3️⃣ **دریافت کد**: ربات با استفاده از مدل AI انتخاب شده ({ai_model_name}) سعی می‌کند کد را بنویسد.
-4️⃣ **تنظیمات**: از منوی '{settings_button}' زبان ربات و مدل AI را تغییر دهید.
+4️⃣ **چت با AI**: روی '{chat_button}' کلیک کنید و با مدل AI انتخاب شده صحبت کنید.
+5️⃣ **تنظیمات**: از منوی '{settings_button}' زبان ربات و مدل AI را تغییر دهید.
+
 ⬅️ **بازگشت**: از دکمه‌های بازگشت استفاده کنید.
 
 ❗️ **توجه**: ربات در حالت کدنویسی فقط درخواست‌های مرتبط با برنامه‌نویسی را پردازش می‌کند.
@@ -155,7 +157,9 @@ translations = {
 1️⃣ **Select Programming Language**: Click '{coding_button}' and choose a language.
 2️⃣ **Send Question**: Write your programming question.
 3️⃣ **Receive Code**: The bot will try to write code using the selected AI model ({ai_model_name}).
-4️⃣ **Settings**: Use the '{settings_button}' menu to change the bot language and AI model. 
+4️⃣ **Chat with AI**: Click '{chat_button}' to talk with the selected AI model.
+5️⃣ **Settings**: Use the '{settings_button}' menu to change the bot language and AI model.
+
 ⬅️ **Navigate**: Use the back buttons.
 
 ❗️ **Note**: In coding mode, the bot only processes programming-related requests.
@@ -185,7 +189,95 @@ translations = {
         'admin_panel_button': "⚙️ Admin Panel",
         'back_button': "🔙 Back"
 
+    },
+    # Add 'ru' and 'tr' translations similarly, adding the new keys
+    'ru': {
+        # ... (previous translations) ...
+        'start_welcome': "**Здравствуйте! Добро пожаловать.**\nЯзык по умолчанию - английский. Используйте кнопку 'Настройки', чтобы изменить язык или другие параметры.",
+        'welcome': "**Здравствуйте, чем я могу вам помочь?**\nАктивная модель: {ai_model_name}",
+        'settings_button': "⚙️ Настройки",
+        'coding_button': "🧬 Кодинг",
+        'chat_button': "💬 Чат с ИИ",
+        'settings_title': "⚙️ **Настройки бота**",
+        'settings_choose_lang': "Выберите язык интерфейса:",
+        'settings_choose_model': "Выберите модель ИИ для кодинга и чата:",
+        'settings_lang_button': "🌐 Сменить язык",
+        'settings_model_button': "🧠 Выбрать модель ИИ",
+        'settings_lang_selected': "✅ Язык изменен на Русский.",
+        'settings_model_selected': "✅ Модель ИИ изменена на {model_name}.",
+        'coding_lang_selected': "Язык: {lang}\nМодель ИИ: {ai_model_name}\n\n**Задайте свой вопрос, и я напишу код.**",
+        'back_to_settings': "🔙 Назад к настройкам",
+        'code_ready': "Ваш код готов (Язык: {lang}, Модель: {ai_model_name})",
+        'code_too_long': "Ваш код готов и отправлен в виде файла (Язык: {lang}, Модель: {ai_model_name})",
+        'new_question_button': "❓ Новый вопрос ({lang})",
+        'api_error_specific': "Ошибка при обработке моделью {model_name}: {e}",
+        'empty_response_error': "Модель {model_name} вернула пустой ответ.",
+        'invalid_request_help': "**Подсказка:** Пожалуйста, сформулируйте ваш запрос четко и по теме генерации кода на '{lang}'. Например:\n`Напиши функцию на Python, которая суммирует два числа.`",
+        'retry_button': "🔄 Попробовать снова",
+        'help_text': """
+1️⃣ **Выберите язык программирования**: Нажмите '{coding_button}' и выберите язык.
+2️⃣ **Отправьте вопрос**: Напишите ваш вопрос по программированию.
+3️⃣ **Получите код**: Бот попытается написать код, используя выбранную модель ИИ ({ai_model_name}).
+4️⃣ **Чат с ИИ**: Нажмите '{chat_button}', чтобы поговорить с выбранной моделью ИИ.
+5️⃣ **Настройки**: Используйте меню '{settings_button}', чтобы изменить язык бота и модель ИИ.
+
+⬅️ **Навигация**: Используйте кнопки возврата.
+
+❗️ **Примечание**: В режиме кодинга бот обрабатывает только запросы, связанные с программированием.
+
+💡 Удачи!
+        """,
+        'start_chat_prompt': "✅ Хорошо! Теперь вы можете общаться с {ai_model_name}. Отправьте свое сообщение.",
+        'stop_chat_button': "⏹️ Закончить чат (Главное меню)",
+        'admin_list_users_title': "**👥 Список пользователей бота ({count} всего):**\n{user_list}",
+        'admin_user_entry': "👤 `ID: {user_id}`\n   _Имя пользователя:_ @{username}\n   _Имя:_ {name}\n   _Замечен:_ {last_seen}\n--------------------",
+        'back_button': "🔙 Назад"
+        # ... (Add other new/modified keys for ru)
+    },
+    'tr': {
+         # ... (previous translations) ...
+        'start_welcome': "**Merhaba! Hoş geldiniz.**\nVarsayılan dil İngilizce'dir. Dili veya diğer ayarları değiştirmek için 'Ayarlar' düğmesini kullanın.",
+        'welcome': "**Merhaba, size nasıl yardımcı olabilirim?**\nAktif Model: {ai_model_name}",
+        'settings_button': "⚙️ Ayarlar",
+        'coding_button': "🧬 Kodlama",
+        'chat_button': "💬 AI ile Sohbet",
+        'settings_title': "⚙️ **Bot Ayarları**",
+        'settings_choose_lang': "Arayüz Dilini Seçin:",
+        'settings_choose_model': "Kodlama ve Sohbet için AI Modelini Seçin:",
+        'settings_lang_button': "🌐 Dili Değiştir",
+        'settings_model_button': "🧠 AI Modeli Seç",
+        'settings_lang_selected': "✅ Dil Türkçe olarak değiştirildi.",
+        'settings_model_selected': "✅ AI Modeli {model_name} olarak değiştirildi.",
+        'coding_lang_selected': "Dil: {lang}\nAI Modeli: {ai_model_name}\n\n**Sorunuzu sorun, kodunu yazayım.**",
+        'back_to_settings': "🔙 Ayarlara Geri Dön",
+        'code_ready': "Kodunuz hazır (Dil: {lang}, Model: {ai_model_name})",
+        'code_too_long': "Kodunuz hazır ve dosya olarak gönderildi (Dil: {lang}, Model: {ai_model_name})",
+        'new_question_button': "❓ Yeni Soru ({lang})",
+        'api_error_specific': "{model_name} modeli ile işlenirken hata oluştu: {e}",
+        'empty_response_error': "{model_name} modeli boş yanıt döndürdü.",
+        'invalid_request_help': "**İpucu:** Lütfen isteğinizi '{lang}' dilinde kod üretimiyle ilgili açıkça belirtin. Örneğin:\n`İki sayıyı toplayan bir Python fonksiyonu yaz.`",
+        'retry_button': "🔄 Tekrar Dene",
+        'help_text': """
+1️⃣ **Programlama Dilini Seçin**: '{coding_button}' düğmesine tıklayın ve bir dil seçin.
+2️⃣ **Soru Gönderin**: Programlama sorunuzu yazın.
+3️⃣ **Kodu Alın**: Bot, seçilen AI modelini ({ai_model_name}) kullanarak kod yazmaya çalışacaktır.
+4️⃣ **AI ile Sohbet**: Seçilen AI modeliyle konuşmak için '{chat_button}' düğmesine tıklayın.
+5️⃣ **Ayarlar**: Bot dilini ve AI modelini değiştirmek için '{settings_button}' menüsünü kullanın.
+
+⬅️ **Gezinme**: Geri düğmelerini kullanın.
+
+❗️ **Not**: Kodlama modunda, bot yalnızca programlamayla ilgili istekleri işler.
+
+💡 Keyfini çıkarın!
+        """,
+        'start_chat_prompt': "✅ Tamam! Şimdi {ai_model_name} ile sohbet edebilirsiniz. Mesajınızı gönderin.",
+        'stop_chat_button': "⏹️ Sohbeti Durdur (Ana Menü)",
+        'admin_list_users_title': "**👥 Bot Kullanıcı Listesi (toplam {count}):**\n{user_list}",
+        'admin_user_entry': "👤 `ID: {user_id}`\n   _Kullanıcı Adı:_ @{username}\n   _İsim:_ {name}\n   _Görülme:_ {last_seen}\n--------------------",
+        'back_button': "🔙 Geri"
+        # ... (Add other new/modified keys for tr)
     }
+}
 
 # --- Database Functions ---
 async def initialize_database():
@@ -581,7 +673,7 @@ async def show_ui_language_options(event):
     buttons = [
         # Add flags for visual appeal
         [Button.inline("🇬🇧 English", b"set_lang_en")],
-        [Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
+        [utton.inline("🇮🇷 فارسی", b"set_lang_fa")],
         [Button.inline(get_translation('back_to_settings', lang_code), b"settings")]
     ]
     text = get_translation('settings_choose_lang', lang_code)
@@ -756,8 +848,8 @@ async def show_help(event):
     await event.edit(
         help_message,
         buttons=[
-            [Button.inline(get_translation('start_coding_button', lang_code), b"coding"),
-             Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
+            [Button.inline(get_translation('start_coding_button', lang_code), b"coding")],
+             #Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
             [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
         ]
     )
