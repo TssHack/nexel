@@ -221,29 +221,33 @@ async def fetch_user_data_from_db(user_id):
 
 async def add_or_update_user_in_db(user_id, username=None, first_name=None):
     """Adds a new user or updates existing user's details and last_seen."""
-    current_time = asyncio.get_event_loop().time() # Use event loop time for consistency
     try:
         async with aiosqlite.connect(db_file) as db:
-            # Insert or ignore if user doesn't exist, setting defaults
-            await db.execute("""
-                INSERT INTO users (user_id, username, first_name, ui_lang, selected_ai_model, last_seen)
-                VALUES (?, ?, ?, 'fa', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id) DO NOTHING;
-            """, (user_id, username, first_name, DEFAULT_AI_MODEL))
+            # بررسی اینکه آیا کاربر از قبل وجود دارد یا نه
+            async with db.execute("SELECT 1 FROM users WHERE user_id = ?", (user_id,)) as cursor:
+                exists = await cursor.fetchone()
 
-            # Always update username, first_name (if provided) and last_seen for existing users
-            update_query = "UPDATE users SET last_seen = CURRENT_TIMESTAMP"
-            params = []
-            if username is not None:
-                update_query += ", username = ?"
-                params.append(username)
-            if first_name is not None:
-                update_query += ", first_name = ?"
-                params.append(first_name)
-            update_query += " WHERE user_id = ?"
-            params.append(user_id)
+            if exists:
+                # کاربر وجود دارد → فقط به‌روزرسانی
+                update_query = "UPDATE users SET last_seen = CURRENT_TIMESTAMP"
+                params = []
+                if username is not None:
+                    update_query += ", username = ?"
+                    params.append(username)
+                if first_name is not None:
+                    update_query += ", first_name = ?"
+                    params.append(first_name)
+                update_query += " WHERE user_id = ?"
+                params.append(user_id)
 
-            await db.execute(update_query, tuple(params))
+                await db.execute(update_query, tuple(params))
+            else:
+                # کاربر جدید است → درج اطلاعات
+                await db.execute("""
+                    INSERT INTO users (user_id, username, first_name, ui_lang, selected_ai_model, last_seen)
+                    VALUES (?, ?, ?, 'fa', ?, CURRENT_TIMESTAMP)
+                """, (user_id, username, first_name, DEFAULT_AI_MODEL))
+
             await db.commit()
     except Exception as e:
         print(f"DB Error in add_or_update_user_in_db for {user_id}: {e}")
