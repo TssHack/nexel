@@ -466,18 +466,18 @@ async def call_lama_api(prompt, model_id):
         traceback.print_exc()
         return f"API_ERROR: {e}"
 
-async def call_gemini_api(prompt, model_param="2"): # Defaulting model param if needed
+async def call_gemini_api(prompt, model_param="2"):  # Default model
     """Calls the Gemini API."""
-    params = {'prompt': prompt, 'model': model_param}
     try:
         async with aiohttp.ClientSession() as session:
-             # Using POST as requested, sending prompt in JSON body
-            async with session.post(GEMINI_API_URL, params={'model': model_param}, json={'prompt': prompt}, timeout=aiohttp.ClientTimeout(total=45)) as response:
+            async with session.post(
+                GEMINI_API_URL,
+                json={'prompt': prompt, 'model': model_param},
+                timeout=aiohttp.ClientTimeout(total=45)
+            ) as response:
                 response.raise_for_status()
-                 # Assuming the API returns JSON with the answer in a 'response' key
                 data = await response.json()
-                # Adjust this key based on actual API response structure
-                return data.get('response', '').strip()
+                return data.get('result', '').strip()  # یا response یا result، بسته به پاسخ سرور
     except aiohttp.ClientResponseError as e:
         print(f"Gemini API HTTP Error: {e.status} - {e.message}")
         return f"API_ERROR: HTTP {e.status}"
