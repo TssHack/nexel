@@ -292,7 +292,7 @@ async def initialize_database():
                 selected_ai_model TEXT DEFAULT 'gpt4',
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """, (DEFAULT_AI_MODEL,))
+        """)
         await db.commit()
         print("Database initialized.")
 
