@@ -122,7 +122,7 @@ translations = {
         'admin_panel_button': "⚙️ پنل مدیریت",
         'back_button': "🔙 بازگشت"
     },
-    'en': {
+    'en'
         'start_welcome': "**Hello! Welcome.**\nThe default language is English. Use the 'Settings' button to change the language or other configurations.",
         'welcome': "**Hello, how can I help you?**\nActive Model: {ai_model_name}",
         'settings_button': "⚙️ Settings",
@@ -317,7 +317,7 @@ async def add_or_update_user_in_db(user_id, username=None, first_name=None):
             # Insert or ignore if user doesn't exist, setting defaults
             await db.execute("""
                 INSERT INTO users (user_id, username, first_name, ui_lang, selected_ai_model, last_seen)
-                VALUES (?, ?, ?, 'en', ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, 'fa', ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(user_id) DO NOTHING;
             """, (user_id, username, first_name, DEFAULT_AI_MODEL))
 
@@ -366,9 +366,9 @@ async def get_all_user_ids_from_db():
 
 
 # --- Helper Functions ---
-def get_translation(key, lang_code='en', **kwargs):
+def get_translation(key, lang_code='fa', **kwargs):
     """Gets the translated string, defaulting to English."""
-    return translations.get(lang_code, translations['en']).get(key, f"[{key}]").format(**kwargs)
+    return translations.get(lang_code, translations['fa']).get(key, f"[{key}]").format(**kwargs)
 
 async def get_user_pref(user_id, key, default_value=None):
     """Gets a specific preference for a user, fetching from DB if not in memory."""
@@ -535,16 +535,16 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
 
     else:
         print(f"Unknown model selected: {model_id}")
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         return get_translation('error_generic', lang_code) + f" (Unknown Model: {model_id})"
 
     # --- Process API Response ---
     if isinstance(response, str) and response.startswith("API_ERROR:"):
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         error_detail = response.split(":", 1)[1].strip()
         return get_translation('api_error_specific', lang_code, model_name=model_name, e=error_detail)
     elif not response: # Empty response
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         return get_translation('empty_response_error', lang_code, model_name=model_name)
     else:
         # Basic cleaning (can be enhanced)
@@ -611,7 +611,7 @@ async def start(event):
 async def show_main_menu(event, edit=False, first_start=False):
     """Displays the main menu."""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
@@ -653,7 +653,7 @@ async def return_to_main_menu(event):
 async def show_settings_menu(event):
     await event.answer()
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
     buttons = [
         [Button.inline(get_translation('settings_lang_button', lang_code), b"change_ui_lang")],
@@ -668,12 +668,12 @@ async def show_settings_menu(event):
 async def show_ui_language_options(event):
     await event.answer()
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
     buttons = [
         # Add flags for visual appeal
         [Button.inline("🇬🇧 English", b"set_lang_en")],
-        [Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
+        [utton.inline("🇮🇷 فارسی", b"set_lang_fa")],
         [Button.inline(get_translation('back_to_settings', lang_code), b"settings")]
     ]
     text = get_translation('settings_choose_lang', lang_code)
@@ -698,7 +698,7 @@ async def set_ui_language(event):
 async def show_ai_model_options(event):
     await event.answer()
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     current_model = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
 
     buttons = []
@@ -724,7 +724,7 @@ async def set_ai_model(event):
 
     if model_id in available_ai_models:
         await set_user_pref(user_id, 'selected_ai_model', model_id)
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         model_name = available_ai_models[model_id]
         await event.answer(get_translation('settings_model_selected', lang_code, model_name=model_name), alert=True)
         # Go back to settings menu
@@ -742,7 +742,7 @@ async def choose_coding_language(event):
         return
 
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
     rows = []
     temp_row = []
@@ -773,7 +773,7 @@ async def handle_coding_language_selection(event):
         return
 
     selected_lang = event.pattern_match.group(1).decode('utf-8')
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en') # UI language
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa') # UI language
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
@@ -808,7 +808,7 @@ async def start_chatting(event):
     await set_user_pref(user_id, 'coding_lang', None) # Exit coding mode
     await set_user_pref(user_id, 'last_prompt', None)
 
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
@@ -833,7 +833,7 @@ async def stop_chatting(event):
 async def show_help(event):
     await event.answer()
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
@@ -863,7 +863,7 @@ async def admin_command(event):
         await get_user_pref(admin_id, 'ui_lang')
         await show_admin_panel(event)
     else:
-        lang_code = await get_user_pref(event.sender_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(event.sender_id, 'ui_lang', 'fa')
         await event.respond(get_translation('admin_not_allowed', lang_code))
 
 @client.on(events.CallbackQuery(data=b"admin_panel"))
@@ -871,11 +871,11 @@ async def admin_panel_callback(event):
     if event.sender_id == admin_id:
         await show_admin_panel(event, edit=True)
     else:
-        await event.answer(get_translation('admin_not_allowed', await get_user_pref(event.sender_id, 'ui_lang', 'en')), alert=True)
+        await event.answer(get_translation('admin_not_allowed', await get_user_pref(event.sender_id, 'ui_lang', 'fa')), alert=True)
 
 
 async def show_admin_panel(event, edit=False):
-    lang_code = await get_user_pref(admin_id, 'ui_lang', 'en') # Admin panel uses admin's language pref
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa') # Admin panel uses admin's language pref
     text = f"**{get_translation('admin_panel_title', lang_code)}**\n\n{get_translation('admin_panel_desc', lang_code)}"
     bot_status = get_translation('admin_off', lang_code) if not bot_active else get_translation('admin_on', lang_code)
 
@@ -904,7 +904,7 @@ async def admin_toggle_bot_status(event):
     global bot_active
     if event.sender_id == admin_id:
         bot_active = not bot_active
-        lang_code = await get_user_pref(admin_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
         status_msg = get_translation('admin_bot_on_msg', lang_code) if bot_active else get_translation('admin_bot_off_msg', lang_code)
         await event.answer(status_msg, alert=True)
         # Update the panel to reflect the new status
@@ -919,7 +919,7 @@ async def admin_list_users(event):
         await event.answer()
         return
 
-    lang_code = await get_user_pref(admin_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
     await event.answer("⏳ Fetching users...")
 
     try:
@@ -977,7 +977,7 @@ async def admin_list_users(event):
 @client.on(events.CallbackQuery(data=b"admin_broadcast"))
 async def admin_ask_broadcast(event):
     if event.sender_id == admin_id:
-        lang_code = await get_user_pref(admin_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
         admin_states[admin_id] = 'awaiting_broadcast_message'
         await event.edit(
             get_translation('admin_ask_broadcast', lang_code),
@@ -992,7 +992,7 @@ async def retry_last_prompt_handler(event):
     user_id = event.sender_id
     last_prompt = await get_user_pref(user_id, 'last_prompt')
     coding_lang = await get_user_pref(user_id, 'coding_lang')
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
     if not last_prompt or not coding_lang:
         await event.answer("No prompt to retry or coding language not set.", alert=True)
@@ -1014,7 +1014,7 @@ async def process_coding_request(event, user_input, processing_msg):
     user_id = event.sender_id
     chat_id = event.chat_id
     coding_lang = await get_user_pref(user_id, 'coding_lang')
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
@@ -1076,7 +1076,7 @@ async def process_chat_request(event, user_input, processing_msg):
     """Handles the logic for processing a chat request."""
     user_id = event.sender_id
     chat_id = event.chat_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
@@ -1126,7 +1126,7 @@ async def handle_message(event):
 
     # 1. Handle Admin Broadcast Input FIRST
     if user_id == admin_id and admin_states.get(user_id) == 'awaiting_broadcast_message':
-        lang_code = await get_user_pref(admin_id, 'ui_lang', 'en')
+        lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
         broadcast_text = user_input
         del admin_states[user_id] # Clear state
 
@@ -1189,7 +1189,7 @@ async def handle_message(event):
     # --- Get User State ---
     is_chatting = await get_user_pref(user_id, 'is_chatting', False)
     coding_lang = await get_user_pref(user_id, 'coding_lang')
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'en')
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
     # 4. Handle Chatting State
     if is_chatting:
