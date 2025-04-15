@@ -90,9 +90,7 @@ translations = {
 1️⃣ **انتخاب زبان برنامه‌نویسی**: روی دکمه '{coding_button}' کلیک کرده و یک زبان را انتخاب کنید.
 2️⃣ **ارسال سوال**: سوال برنامه‌نویسی خود را بنویسید.
 3️⃣ **دریافت کد**: ربات با استفاده از مدل AI انتخاب شده ({ai_model_name}) سعی می‌کند کد را بنویسد.
-4️⃣ **چت با AI**: روی '{chat_button}' کلیک کنید و با مدل AI انتخاب شده صحبت کنید.
-5️⃣ **تنظیمات**: از منوی '{settings_button}' زبان ربات و مدل AI را تغییر دهید.
-
+4️⃣ **تنظیمات**: از منوی '{settings_button}' زبان ربات و مدل AI را تغییر دهید.
 ⬅️ **بازگشت**: از دکمه‌های بازگشت استفاده کنید.
 
 ❗️ **توجه**: ربات در حالت کدنویسی فقط درخواست‌های مرتبط با برنامه‌نویسی را پردازش می‌کند.
@@ -157,9 +155,7 @@ translations = {
 1️⃣ **Select Programming Language**: Click '{coding_button}' and choose a language.
 2️⃣ **Send Question**: Write your programming question.
 3️⃣ **Receive Code**: The bot will try to write code using the selected AI model ({ai_model_name}).
-4️⃣ **Chat with AI**: Click '{chat_button}' to talk with the selected AI model.
-5️⃣ **Settings**: Use the '{settings_button}' menu to change the bot language and AI model.
-
+4️⃣ **Settings**: Use the '{settings_button}' menu to change the bot language and AI model. 
 ⬅️ **Navigate**: Use the back buttons.
 
 ❗️ **Note**: In coding mode, the bot only processes programming-related requests.
