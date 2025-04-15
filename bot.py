@@ -614,7 +614,7 @@ async def show_ai_model_options(event):
     buttons = []
     temp_row = []
     for model_id, display_name in available_ai_models.items():
-        prefix = "➡️ " if model_id == current_model else ""
+        prefix = "✅ " if model_id == current_model else ""
         temp_row.append(Button.inline(f"{prefix}{display_name}", f"set_model_{model_id}".encode()))
         if len(temp_row) == 2: # Two models per row
             buttons.append(temp_row)
