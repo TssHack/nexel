@@ -1015,6 +1015,8 @@ async def process_chat_request(event, user_input, processing_msg):
 
 # --- Main Message Handler ---
 
+# --- Main Message Handler ---
+
 @client.on(events.NewMessage)
 async def handle_message(event):
     user_id = event.sender_id
@@ -1035,52 +1037,7 @@ async def handle_message(event):
     await get_user_pref(user_id, 'ui_lang') # Loads defaults if not present
 
     # 1. Handle Admin Broadcast Input FIRST
-    if user_id == admin_id and admin_states.get(user_id) == 'awaiting_broadcast_message':
-        lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
-        broadcast_text = user_input
-        del admin_states[user_id] # Clear state
-
-        user_ids = await get_all_user_ids_from_db()
-        if not user_ids:
-            await event.respond("No users in the database to broadcast to.")
-            await show_admin_panel(event)
-            return
-
-        count = len(user_ids)
-        sent_count = 0
-        failed_count = 0
-        status_message = await event.respond(get_translation('admin_broadcast_sending', lang_code, count=count))
-
-        tasks = []
-        for target_user_id in user_ids:
-            # Use a separate function scope for closure
-            async def send_to_user(uid, text):
-                try:
-                    # Avoid sending to self if admin is in user list
-                    if uid == admin_id:
-                       return True # Skip self
-                    await client.send_message(uid, text)
-                    await asyncio.sleep(0.1) # Small delay between sends
-                    return True
-                except Exception as e:
-                    print(f"Failed to send broadcast to {uid}: {e}")
-                    return False
-            tasks.append(send_to_user(target_user_id, broadcast_text))
-
-        results = await asyncio.gather(*tasks)
-        sent_count = sum(1 for r in results if r)
-        failed_count = count - sent_count - (1 if admin_id in user_ids else 0) # Adjust count if admin skipped
-
-        result_message = get_translation('admin_broadcast_sent', lang_code) + f" ({sent_count} successful)"
-        if failed_count > 0:
-            result_message += f"\n{get_translation('admin_broadcast_failed', lang_code)} ({failed_count} failures)"
-
-        try:
-            await status_message.edit(result_message)
-        except Exception: # Handle potential edit errors
-            await event.respond(result_message)
-
-        await asyncio.sleep(2)
+    # ... (کد مربوط به broadcast بدون تغییر) ...
         await show_admin_panel(event) # Show admin panel again
         return # Stop further processing
 
@@ -1088,13 +1045,21 @@ async def handle_message(event):
     if not bot_active and user_id != admin_id:
         return
 
-    # 3. Ignore Commands (handled by specific decorators like /start, /admin)
+    # 3. Ignore Commands handled by specific decorators
     if user_input.startswith('/'):
-        # Allow /start and /admin to be re-processed if needed by their handlers
-        if user_input.split()[0] not in ['/start', '/admin']:
+        # If the command has its own dedicated handler (@client.on),
+        # let that handler process it and stop execution here.
+        known_commands = ['/start', '/admin'] # لیستی از دستوراتی که هندلر مخصوص دارند
+        if user_input.split(' ', 1)[0] in known_commands:
+            # The specific handler (e.g., start() or admin_command()) will take care of it.
+            # No further processing needed in this general handler.
+            return  # <<< مهم: از ادامه اجرای handle_message جلوگیری می‌کند
+        else:
+           # Handle or ignore unknown commands
            print(f"Ignoring unknown command: {user_input}")
-           return
-        # Let specific handlers for /start, /admin catch these
+           # You might want to send a message here like "Unknown command"
+           # await event.respond("Unknown command.")
+           return # Stop processing for unknown commands as well
 
     # --- Get User State ---
     is_chatting = await get_user_pref(user_id, 'is_chatting', False)
@@ -1103,38 +1068,29 @@ async def handle_message(event):
 
     # 4. Handle Chatting State
     if is_chatting:
-        # User is in dedicated chat mode
-        processing_msg = await event.respond(get_translation('processing', lang_code))
-        await process_chat_request(event, user_input, processing_msg)
+        # ... (کد چت بدون تغییر) ...
         return # Don't process further
 
     # 5. Handle Coding State
     if coding_lang:
-        # User has selected a coding language
-        processing_msg = await event.respond(get_translation('processing', lang_code))
-        async with client.action(chat_id, "typing"):
-             is_valid = await is_code_related(user_input, event, coding_lang)
-             if is_valid:
-                 await process_coding_request(event, user_input, processing_msg)
-             else:
-                 # Invalid coding request - show help and retry button
-                 help_text = get_translation('invalid_request_help', lang_code, lang=coding_lang)
-                 await processing_msg.edit(
-                     f"{get_translation('invalid_request', lang_code)}\n\n{help_text}",
-                     buttons=[
-                         Button.inline(get_translation('retry_button', lang_code), b"retry_last_prompt"),
-                         Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")
-                     ]
-                 )
-                 # Store the invalid prompt for potential retry
-                 await set_user_pref(user_id, 'last_prompt', user_input)
+        # ... (کد کدنویسی بدون تغییر) ...
         return # Don't process further
 
     # 6. Handle Idle State (No command, not chatting, no coding language selected)
-    # User sent random text in the main menu area
-    # Gently guide them back to using buttons
-    await event.delete() # Optionally delete the user's random message
-    await show_main_menu(event, edit=False) # Show the main menu again
+    # If execution reaches here, it means the user sent a regular message
+    # when they weren't in coding or chat mode, and it wasn't a known command.
+    # Gently guide them back to using buttons or handle as needed.
+    try:
+        # Delete the message to keep the chat clean, or send a guidance message
+        await event.delete()
+    except Exception as e:
+        # Deleting might fail if the bot lacks permissions or message is too old
+        print(f"Could not delete message {event.id} from user {user_id}: {e}")
+        # Optionally send a message instead of deleting
+        # await event.respond("Please use the buttons to interact with the bot.", buttons=...)
+
+    # Show the main menu again as a guide
+    await show_main_menu(event, edit=False) # Sending a new message here is appropriate
 
 
 # --- Bot Startup ---
