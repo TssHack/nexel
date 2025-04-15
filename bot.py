@@ -57,7 +57,7 @@ ext_map = {
 translations = {
     'fa': {
         'start_welcome': "🌟 **سلام! خوش اومدی دوست عزیز 😊**\n\n🗣️ زبان پیش‌فرض: **فارسی** 🇮🇷\n\n⚙️ برای تغییر زبان یا تنظیمات دیگه، از دکمه‌ی 'Settings ⚙️' استفاده کن!\n\n✨ با آرزوی تجربه‌ای دلچسب و هوشمند ✨", # Welcome on first start
-        'welcome': "👋 **سلام، چطوری می‌تونم کمکت کنم؟** 😊\n🤖 مدل فعال: `{ai_model_name}`",
+        'welcome': "👋 **سلام! چطوری می‌تونم کمکت کنم؟** 😊\n\n🤖 *مدل فعال*: `{ai_model_name}`\n\n📚 *لطفاً راهنما را برای جزئیات بیشتر مطالعه کن.* ✨",
         'settings_button': "⚙️ تنظیمات",
         'coding_button': "🧬 کد نویسی",
         'chat_button': "💬 چت با AI",
@@ -123,7 +123,7 @@ translations = {
     },
     'en'
         'start_welcome': "**Hello! Welcome.**\nThe default language is English. Use the 'Settings' button to change the language or other configurations.",
-        'welcome': "**Hello, how can I help you?**\nActive Model: {ai_model_name}",
+        'welcome': "👋 **Hello! How can I assist you today?** 😊\n\n🤖 *Active Model*: `{ai_model_name}`\n\n📚 *Please read the guide for more details.* ✨",
         'settings_button': "⚙️ Settings",
         'coding_button': "🧬 Coding",
         'chat_button': "💬 Chat with AI",
