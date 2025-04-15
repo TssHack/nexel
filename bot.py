@@ -187,6 +187,7 @@ translations = {
         'back_button': "🔙 Back"
 
     }
+}
 
 # --- Database Functions ---
 async def initialize_database():
