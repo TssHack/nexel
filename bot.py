@@ -328,8 +328,8 @@ async def call_gpt4_api(prompt, user_id_str):
         "referer": "https://chat18.aichatos.xyz/", "user-agent": "Mozilla/5.0",
         "Content-Type": "application/json"
     }
-    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-    ehsan_prompt = code_prompt + prompt
+    code_prompt = "فقط کد رو بده، تأکید می‌کنم فقط کد!\n"
+    ehsan_prompt = f"{code_prompt}زبان برنامه‌نویسی: {lang}\n\n{prompt}"
     data = {
         "prompt": ehsan_prompt, "userId": f"#/{user_id_str}", "network": True,
         "system": "", "withoutContext": False, "stream": False
@@ -354,8 +354,8 @@ async def call_gpt4_api(prompt, user_id_str):
 async def call_lama_api(prompt, model_id):
     """Calls the Llama API correctly with POST and JSON body."""
     
-    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-    ehsan_prompt = code_prompt + prompt
+    code_prompt = "فقط کد رو بده، تأکید می‌کنم فقط کد!\n"
+    ehsan_prompt = f"{code_prompt}زبان برنامه‌نویسی: {lang}\n\n{prompt}"
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -384,8 +384,8 @@ async def call_lama_api(prompt, model_id):
 
 async def call_gemini_api(prompt, model_param="2"):  # Default model
     """Calls the Gemini API."""
-    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-    ehsan_prompt = code_prompt + prompt
+    code_prompt = "فقط کد رو بده، تأکید می‌کنم فقط کد!\n"
+    ehsan_prompt = f"{code_prompt}زبان برنامه‌نویسی: {lang}\n\n{prompt}"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
