@@ -289,7 +289,7 @@ async def initialize_database():
                 username TEXT,
                 first_name TEXT,
                 ui_lang TEXT DEFAULT 'en',
-                selected_ai_model TEXT DEFAULT ?,
+                selected_ai_model TEXT DEFAULT 'gpt4',
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """, (DEFAULT_AI_MODEL,))
