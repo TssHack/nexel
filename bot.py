@@ -23,7 +23,7 @@ GEMINI_API_URL = "https://gem-ehsan.vercel.app/gemini/chat" # model in query par
 # --- Bot State ---
 client = TelegramClient(session_name, api_id, api_hash)
 bot_active = True
-user_data = {} # Stores user-specific data: {user_id: {'ui_lang': 'en', 'coding_lang': None, 'ai_model': 'gpt4', 'is_chatting': False, 'last_prompt': None}}
+user_data = {} # Stores user-specific data: {user_id: {'ui_lang': 'fa', 'coding_lang': None, 'ai_model': 'gpt4', 'is_chatting': False, 'last_prompt': None}}
 admin_states = {} # State for admin actions {admin_id: action}
 
 # --- Bot Data ---
@@ -115,7 +115,7 @@ translations = {
         'admin_broadcast_sent': "✅ پیام همگانی با موفقیت ارسال شد.",
         'admin_broadcast_failed': "⚠️ ارسال پیام به برخی کاربران با خطا مواجه شد.",
         'admin_list_users_title': "**👥 لیست کاربران ربات ({count} نفر):**\n{user_list}", # Placeholder for list
-        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n   _Seen:_ {last_seen}\n--------------------", # User entry format
+        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n--------------------", # User entry format
         'admin_no_users': "**هنوز هیچ کاربری در دیتابیس ثبت نشده است.**",
         'admin_not_allowed': "**شما اجازه دسترسی به این بخش را ندارید.**",
         'error_generic': "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
@@ -182,7 +182,7 @@ translations = {
         'admin_broadcast_sent': "✅ Broadcast message sent successfully.",
         'admin_broadcast_failed': "⚠️ Failed to send message to some users.",
         'admin_list_users_title': "**👥 Bot Users List ({count} total):**\n{user_list}", # Placeholder for list
-        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n   _Seen:_ {last_seen}\n--------------------", # User entry format
+        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n--------------------", # User entry format
         'admin_no_users': "**No users found in the database yet.**",
         'admin_not_allowed': "**You do not have permission to access this section.**",
         'error_generic': "An error occurred. Please try again.",
@@ -288,7 +288,7 @@ async def initialize_database():
                 user_id INTEGER PRIMARY KEY,
                 username TEXT,
                 first_name TEXT,
-                ui_lang TEXT DEFAULT 'en',
+                ui_lang TEXT DEFAULT 'fa',
                 selected_ai_model TEXT DEFAULT 'gpt4',
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -385,7 +385,7 @@ async def get_user_pref(user_id, key, default_value=None):
         else:
             # User not in DB yet, use defaults (will be added by add_or_update_user_in_db)
             user_data[user_id] = {
-                'ui_lang': 'en',
+                'ui_lang': 'fa',
                 'coding_lang': None,
                 'ai_model': DEFAULT_AI_MODEL,
                 'is_chatting': False,
@@ -418,8 +418,10 @@ async def call_gpt4_api(prompt, user_id_str):
         "referer": "https://chat18.aichatos.xyz/", "user-agent": "Mozilla/5.0",
         "Content-Type": "application/json"
     }
+    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
+    ehsan_prompt = code_prompt + prompt
     data = {
-        "prompt": prompt, "userId": f"#/{user_id_str}", "network": True,
+        "prompt": ehsan_prompt, "userId": f"#/{user_id_str}", "network": True,
         "system": "", "withoutContext": False, "stream": False
     }
     try:
@@ -441,11 +443,15 @@ async def call_gpt4_api(prompt, user_id_str):
 
 async def call_lama_api(prompt, model_id):
     """Calls the Llama API correctly with POST and JSON body."""
+    
+    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
+    ehsan_prompt = code_prompt + prompt
+
     try:
         async with aiohttp.ClientSession() as session:
             payload = {
                 "model": model_id,
-                "prompt": prompt
+                "prompt": ehsan_prompt
             }
             async with session.post(
                 LAMA_API_URL,
@@ -468,11 +474,13 @@ async def call_lama_api(prompt, model_id):
 
 async def call_gemini_api(prompt, model_param="2"):  # Default model
     """Calls the Gemini API."""
+    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
+    ehsan_prompt = code_prompt + prompt
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GEMINI_API_URL,
-                json={'prompt': prompt, 'model': model_param},
+                json={'prompt': ehsan_prompt, 'model': model_param},
                 timeout=aiohttp.ClientTimeout(total=45)
             ) as response:
                 response.raise_for_status()
@@ -610,8 +618,7 @@ async def show_main_menu(event, edit=False, first_start=False):
     buttons = [
         [Button.inline(get_translation('settings_button', lang_code), b"settings"),
          Button.inline(get_translation('coding_button', lang_code), b"coding")],
-        [Button.inline(get_translation('chat_button', lang_code), b"start_chat"),
-         Button.inline(get_translation('help_button', lang_code), b"help")],
+        [Button.inline(get_translation('help_button', lang_code), b"help")],
         [Button.url(get_translation('developer_button', lang_code), "https://t.me/n6xel")]
     ]
     if user_id == admin_id:
