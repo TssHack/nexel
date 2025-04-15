@@ -23,7 +23,7 @@ GEMINI_API_URL = "https://gem-ehsan.vercel.app/gemini/chat" # model in query par
 # --- Bot State ---
 client = TelegramClient(session_name, api_id, api_hash)
 bot_active = True
-user_data = {} # Stores user-specific data: {user_id: {'ui_lang': 'en', 'coding_lang': None, 'ai_model': 'gpt4', 'is_chatting': False, 'mode': None, 'last_prompt': None}}
+user_data = {} # Stores user-specific data: {user_id: {'ui_lang': 'en', 'coding_lang': None, 'ai_model': 'gpt4', 'is_chatting': False, 'last_prompt': None}}
 admin_states = {} # State for admin actions {admin_id: action}
 
 # --- Bot Data ---
@@ -379,7 +379,7 @@ async def get_user_pref(user_id, key, default_value=None):
                 'ui_lang': db_data['ui_lang'],
                 'coding_lang': None, # Runtime state
                 'ai_model': db_data['selected_ai_model'],
-                'is_chatting': False, 'mode': None, # Runtime state
+                'is_chatting': False, # Runtime state
                 'last_prompt': None # Runtime state
             }
         else:
@@ -388,7 +388,7 @@ async def get_user_pref(user_id, key, default_value=None):
                 'ui_lang': 'en',
                 'coding_lang': None,
                 'ai_model': DEFAULT_AI_MODEL,
-                'is_chatting': False, 'mode': None,
+                'is_chatting': False,
                 'last_prompt': None
             }
             # Attempt to add them now
@@ -501,20 +501,20 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
     if model_id == "gpt4":
         # Refine prompt slightly for GPT-4 coding
         if is_coding_request:
-            coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            api_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
+             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
+             api_prompt = f"Please generate ONLY the {coding_lang} code based on the following request. Do not include explanations, greetings, or markdown formatting like ``` unless it's part of the code itself.\n\nRequest:\n{prompt}"
         else:
-            api_prompt = prompt  # General chat prompt
-
+             api_prompt = prompt # General chat prompt
         response = await call_gpt4_api(api_prompt, user_id_str)
-    
+
     elif model_id.startswith("llama") or model_id in ["mixtral", "gemma", "deepseek"]:
         # Lama API - model ID is passed as a parameter
         # Assume these models understand direct prompts well for both chat & code
         api_prompt = prompt
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            api_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
+            # You might want to add context for coding here if needed
+            # api_prompt = f"Generate {coding_lang} code for: {prompt}"
         response = await call_lama_api(api_prompt, model_id)
 
     elif model_id == "gemini":
@@ -522,7 +522,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         api_prompt = prompt
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            api_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
+            # api_prompt = f"Generate {coding_lang} code for: {prompt}"
         response = await call_gemini_api(api_prompt, model_param="2") # Using fixed model param "2"
 
     else:
@@ -557,7 +557,7 @@ async def is_code_related(text, event, coding_lang):
     user_id = event.sender_id
     # Use the user's selected AI model for validation for consistency
     # Using a simple internal prompt for validation
-    check_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
+    check_prompt = f'Analyze the following user request for "{coding_lang}" programming:\n"{text}"\n\nIs this a request to write or explain code? Answer ONLY with "yes" or "no".'
 
     try:
         async with client.action(event.chat_id, "typing"):
@@ -665,8 +665,8 @@ async def show_ui_language_options(event):
 
     buttons = [
         # Add flags for visual appeal
-        [Button.inline("🇬🇧 English", b"set_lang_en"), Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
-        [Button.inline("🇷🇺 Русский", b"set_lang_ru"), Button.inline("🇹🇷 Türkçe", b"set_lang_tr")],
+        [Button.inline("🇬🇧 English", b"set_lang_en")],
+        Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
         [Button.inline(get_translation('back_to_settings', lang_code), b"settings")]
     ]
     text = get_translation('settings_choose_lang', lang_code)
@@ -1242,4 +1242,3 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Bot stopping...")
-
