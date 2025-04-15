@@ -585,7 +585,7 @@ async def show_ui_language_options(event):
     buttons = [
         # Add flags for visual appeal
         [Button.inline("🇬🇧 English", b"set_lang_en")],
-        [utton.inline("🇮🇷 فارسی", b"set_lang_fa")],
+        [Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
         [Button.inline(get_translation('back_to_settings', lang_code), b"settings")]
     ]
     text = get_translation('settings_choose_lang', lang_code)
