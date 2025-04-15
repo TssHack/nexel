@@ -501,13 +501,13 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
     if model_id == "gpt4":
         # Refine prompt slightly for GPT-4 coding
         if is_coding_request:
-             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-             api_prompt = f"{coding_lang}
-{user_prompt}
-فقط کد رو نمایش بده فقط کد"
-        else:
-             api_prompt = prompt # General chat prompt
-        response = await call_gpt4_api(api_prompt, user_id_str)
+            coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
+            api_prompt = f"""{coding_lang}
+        {user_prompt}  فقط کد رو نمایش بده فقط کد ."""
+    else:
+    api_prompt = prompt  # General chat prompt
+
+response = await call_gpt4_api(api_prompt, user_id_str)
 
     elif model_id.startswith("llama") or model_id in ["mixtral", "gemma", "deepseek"]:
         # Lama API - model ID is passed as a parameter
