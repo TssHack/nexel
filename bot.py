@@ -34,7 +34,7 @@ coding_languages = [
 
 # Model Identifier: Display Name
 available_ai_models = {
-    "gpt4": "GPT-4 (Default)",
+    "gpt4": "GPT-4",
     "llama4-maverick": "Llama4 Maverick",
     "llama4-scout": "Llama4 Scout",
     "llama3-70b": "Llama3 70b",
