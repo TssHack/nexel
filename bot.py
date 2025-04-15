@@ -502,23 +502,19 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         # Refine prompt slightly for GPT-4 coding
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            api_prompt = f"""{coding_lang}
-        {user_prompt}  فقط کد رو نمایش بده فقط کد ."""
-    else:
-    api_prompt = prompt  # General chat prompt
+            api_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
+        else:
+            api_prompt = prompt  # General chat prompt
 
-response = await call_gpt4_api(api_prompt, user_id_str)
-
+        response = await call_gpt4_api(api_prompt, user_id_str)
+    
     elif model_id.startswith("llama") or model_id in ["mixtral", "gemma", "deepseek"]:
         # Lama API - model ID is passed as a parameter
         # Assume these models understand direct prompts well for both chat & code
         api_prompt = prompt
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            # You might want to add context for coding here if needed
-            # api_prompt = f"{coding_lang}
-{user_prompt}
-فقط کد رو نمایش بده فقط کد"
+            api_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
         response = await call_lama_api(api_prompt, model_id)
 
     elif model_id == "gemini":
@@ -526,9 +522,7 @@ response = await call_gpt4_api(api_prompt, user_id_str)
         api_prompt = prompt
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            # api_prompt = f"{coding_lang}
-{user_prompt}
-فقط کد رو نمایش بده فقط کد"
+            api_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
         response = await call_gemini_api(api_prompt, model_param="2") # Using fixed model param "2"
 
     else:
@@ -563,9 +557,7 @@ async def is_code_related(text, event, coding_lang):
     user_id = event.sender_id
     # Use the user's selected AI model for validation for consistency
     # Using a simple internal prompt for validation
-    check_prompt = f"{coding_lang}
-{user_prompt}
-فقط کد رو نمایش بده فقط کد"
+    check_prompt = f"{coding_lang}\n{user_prompt}\nفقط کد رو نمایش بده فقط کد"
 
     try:
         async with client.action(event.chat_id, "typing"):
