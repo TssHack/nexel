@@ -56,8 +56,8 @@ ext_map = {
 # --- Multilingual Text (Updated) ---
 translations = {
     'fa': {
-        'start_welcome': 'start_welcome': "🌟 **سلام! خوش اومدی دوست عزیز 😊**\n\n🗣️ زبان پیش‌فرض: **فارسی** 🇮🇷\n\n⚙️ برای تغییر زبان یا تنظیمات دیگه، از دکمه‌ی 'Settings ⚙️' استفاده کن!\n\n✨ با آرزوی تجربه‌ای دلچسب و هوشمند ✨", # Welcome on first start
-        'welcome': 'chat_welcome': "👋 **سلام، چطوری می‌تونم کمکت کنم؟** 😊\n🤖 مدل فعال: `{ai_model_name}`",
+        'start_welcome': "🌟 **سلام! خوش اومدی دوست عزیز 😊**\n\n🗣️ زبان پیش‌فرض: **فارسی** 🇮🇷\n\n⚙️ برای تغییر زبان یا تنظیمات دیگه، از دکمه‌ی 'Settings ⚙️' استفاده کن!\n\n✨ با آرزوی تجربه‌ای دلچسب و هوشمند ✨", # Welcome on first start
+        'welcome': "👋 **سلام، چطوری می‌تونم کمکت کنم؟** 😊\n🤖 مدل فعال: `{ai_model_name}`",
         'settings_button': "⚙️ تنظیمات",
         'coding_button': "🧬 کد نویسی",
         'chat_button': "💬 چت با AI",
