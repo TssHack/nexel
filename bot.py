@@ -12,7 +12,7 @@ import traceback # For better error logging
 api_id = 18377832
 api_hash = "ed8556c450c6d0fd68912423325dd09c"
 session_name = "my_ai_multilang"
-admin_id = 6856915102 # <<< حتماً آیدی عددی ادمین را اینجا قرار دهید
+admin_id = 7094106651 # <<< حتماً آیدی عددی ادمین را اینجا قرار دهید
 db_file = "users_data.db" # نام فایل دیتابیس جدید
 
 # --- API Endpoints ---
