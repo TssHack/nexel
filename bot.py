@@ -121,7 +121,7 @@ translations = {
         'admin_panel_button': "⚙️ پنل مدیریت",
         'back_button': "🔙 بازگشت"
     },
-    'en'
+    'en': {
         'start_welcome': "**Hello! Welcome.**\nThe default language is English. Use the 'Settings' button to change the language or other configurations.",
         'welcome': "👋 **Hello! How can I assist you today?** 😊\n\n🤖 *Active Model*: `{ai_model_name}`\n\n📚 *Please read the guide for more details.* ✨",
         'settings_button': "⚙️ Settings",
