@@ -92,8 +92,7 @@ translations = {
 3️⃣ **دریافت کد**: ربات با استفاده از مدل AI انتخاب شده ({ai_model_name}) سعی می‌کند کد را بنویسد.
 4️⃣ **تنظیمات**: از منوی '{settings_button}' زبان ربات و مدل AI را تغییر دهید.
 ⬅️ **بازگشت**: از دکمه‌های بازگشت استفاده کنید.
-
-⬅️ **بازگشت**: از دکمه‌های بازگشت استفاده کنید.
+**❗️ نکته مهم:**\nبرای تجربه‌ای بهتر و پاسخ‌های دقیق‌تر، از مدل‌های قدرتمند مثل:\n🔹 `DeepSeek`\n🔹 `Gemini`\n🔹 `GPT`\nاستفاده کنید. 🚀",
 
 ❗️ **توجه**: ربات در حالت کدنویسی فقط درخواست‌های مرتبط با برنامه‌نویسی را پردازش می‌کند.
 
@@ -159,7 +158,7 @@ translations = {
 3️⃣ **Receive Code**: The bot will try to write code using the selected AI model ({ai_model_name}).
 4️⃣ **Settings**: Use the '{settings_button}' menu to change the bot language and AI model. 
 ⬅️ **Navigate**: Use the back buttons.
-
+📌 **Important Note:**\nFor a better experience and more accurate responses, use powerful models like:\n🔹 `DeepSeek`\n🔹 `Gemini`\n🔹 `GPT`\nEnjoy the best results! 🚀
 ❗️ **Note**: In coding mode, the bot only processes programming-related requests.
 
 💡 Enjoy!
