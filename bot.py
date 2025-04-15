@@ -440,16 +440,20 @@ async def call_gpt4_api(prompt, user_id_str):
         return f"API_ERROR: {e}"
 
 async def call_lama_api(prompt, model_id):
-    """Calls the Llama API."""
-    params = {'model': model_id, 'prompt': prompt}
+    """Calls the Llama API correctly with POST and JSON body."""
     try:
         async with aiohttp.ClientSession() as session:
-            # Using POST as requested, sending prompt in JSON body
-            async with session.post(LAMA_API_URL, params={'model': model_id}, json={'prompt': prompt}, timeout=aiohttp.ClientTimeout(total=45)) as response:
+            payload = {
+                "model": model_id,
+                "prompt": prompt
+            }
+            async with session.post(
+                LAMA_API_URL,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=45)
+            ) as response:
                 response.raise_for_status()
-                # Assuming the API returns JSON with the answer in a 'response' key
                 data = await response.json()
-                # Adjust this key based on actual API response structure
                 return data.get('response', '').strip()
     except aiohttp.ClientResponseError as e:
         print(f"Llama API ({model_id}) HTTP Error: {e.status} - {e.message}")
