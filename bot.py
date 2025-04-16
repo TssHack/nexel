@@ -450,7 +450,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
             # You might want to add context for coding here if needed
-            api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code"
+            api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code. One Only send code no need deskeripshen"
         response = await call_lama_api(api_prompt, model_id)
 
     elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro"]:
