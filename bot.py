@@ -43,7 +43,13 @@ available_ai_models = {
     "mixtral": "Mixtral",
     "gemma": "Gemma",
     "deepseek": "Deepseek",
-    "gemini": "Gemini Pro" # Gemini API model identifier (can be 1 or 2 usually, let's assume 2 for this setup)
+    # --- New Gemini Models ---
+    "1.0pro": "Gemini 1.0 Pro",
+    "1.5flash": "Gemini 1.5 Flash",
+    "1.5pro": "Gemini 1.5 Pro",
+    "2": "Gemini 2.0 Flash"
+    "2.5pro": "Gemini 2.5 Pro", # Uncomment if you want to test experimental
+    "provision": "Gemini Pro" # Note: Vision model might require different handling (e.g., image input)
 }
 DEFAULT_AI_MODEL = "gpt4"
 
