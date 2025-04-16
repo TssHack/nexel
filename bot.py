@@ -201,16 +201,16 @@ translations = {
 async def initialize_database():
     """Initializes the database and table schema."""
     async with aiosqlite.connect(db_file) as db:
-        await db.execute("""
+        await db.execute(f"""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
                 username TEXT,
                 first_name TEXT,
                 ui_lang TEXT DEFAULT 'fa',
-                selected_ai_model TEXT DEFAULT ?, -- Use placeholder for default
+                selected_ai_model TEXT DEFAULT '{DEFAULT_AI_MODEL}',
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """, (DEFAULT_AI_MODEL,)) # Pass default model here
+           )
+       """)
         # Add migration step if default model changes and DB exists
         # Example: await db.execute("UPDATE users SET selected_ai_model = ? WHERE selected_ai_model = 'old_default'", (DEFAULT_AI_MODEL,))
         await db.commit()
