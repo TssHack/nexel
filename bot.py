@@ -435,7 +435,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
             # You might want to add context for coding here if needed
-            api_prompt = f"Generate {coding_lang} code for: {prompt}"
+            api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code"
         response = await call_lama_api(api_prompt, model_id)
 
     elif model_id == "gemini":
@@ -443,7 +443,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         api_prompt = prompt
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            # api_prompt = f"Generate {coding_lang} code for: {prompt}"
+            api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code"
         response = await call_gemini_api(api_prompt, model_param="2") # Using fixed model param "2"
 
     else:
