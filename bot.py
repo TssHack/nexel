@@ -455,23 +455,19 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         response = await call_lama_api(api_prompt, model_id)
 
     elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro"]:
+         if is_coding_request:
+             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
+        # Instruct Gemini for code generation (adjust based on testing)
+             api_prompt = f"Generate {coding_lang} code for the following request. Provide only the code itself, without explanations or markdown code fences (```):\n\n{prompt}"
+         else:
+             api_prompt = prompt  # Use original prompt for non-coding requests
 
-        if is_coding_request:
-            coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            # Instruct Gemini for code generation (adjust based on testing)
-            api_prompt = f"Generate {coding_lang} code for the following request. Provide only the code itself, without explanations or markdown code fences (```):\n\n{prompt}"
-        # else: api_prompt remains the original prompt for chat
-        response = await call_gemini_api(api_prompt, model_id) # Pass the actual model_id
+         response = await call_gemini_api(api_prompt, model_id)  # Pass the actual model_id
 
-    else:
-        print(f"Unknown or unsupported model selected: {model_id}")
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
-        return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
-
-    else:
-        print(f"Unknown or unsupported model selected: {model_id}")
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
-        return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
+     else:
+         print(f"Unknown or unsupported model selected: {model_id}")
+         lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+         return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
         
     # --- Process API Response ---
     if isinstance(response, str) and response.startswith("API_ERROR:"):
