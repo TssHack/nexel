@@ -346,7 +346,7 @@ async def call_gpt4_api(prompt, user_id_str):
     }
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(GPT4_API_URL, json=data, headers=headers, timeout=aiohttp.ClientTimeout(total=45)) as response:
+            async with session.post(GPT4_API_URL, json=data, headers=headers, timeout=aiohttp.ClientTimeout(total=60)) as response:
                 response.raise_for_status() # Raise error for bad responses (4xx or 5xx)
                 text = await response.text()
                 return text.strip()
@@ -375,7 +375,7 @@ async def call_lama_api(prompt, model_id):
             async with session.post(
                 LAMA_API_URL,
                 json=payload,
-                timeout=aiohttp.ClientTimeout(total=45)
+                timeout=aiohttp.ClientTimeout(total=60)
             ) as response:
                 response.raise_for_status()
                 data = await response.json()
