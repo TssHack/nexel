@@ -44,7 +44,6 @@ available_ai_models = {
     "gemma": "Gemma",
     "deepseek": "Deepseek",
     # --- New Gemini Models ---
-    "1.0pro": "Gemini 1.0 Pro",
     "gemini-1.5-flash-latest": "Gemini 1.5 Flash",
     "1.5pro": "Gemini 1.5 Pro",
     "2": "Gemini 2.0 Flash",
