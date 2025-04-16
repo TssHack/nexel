@@ -611,7 +611,7 @@ async def show_main_menu(event, edit=False, first_start=False):
         # Add Chat button back if desired
         [Button.inline(get_translation('chat_button', lang_code), b"start_chat"),
          Button.inline(get_translation('help_button', lang_code), b"help")],
-        [Button.url(get_translation('developer_button', lang_code), "[https://t.me/n6xel](https://t.me/n6xel)")]
+        [Button.url(get_translation('developer_button', lang_code), "(https://t.me/n6xel)")]
     ]
     if user_id == admin_id:
         buttons.append([Button.inline(get_translation('admin_panel_button', lang_code), b"admin_panel")])
