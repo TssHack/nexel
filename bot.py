@@ -393,9 +393,8 @@ async def call_lama_api(prompt, model_id):
 async def call_gemini_api(prompt, model_id):
     """Calls the Gemini API with the specified model ID."""
     # Consider if this prefix is always needed, might interfere with chat
-     #code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-     #ehsan_prompt = code_prompt + prompt
-    ehsan_prompt = prompt # Use the prompt passed from call_selected_api
+    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
+    ehsan_prompt = code_prompt + prompt
     print(f"Calling Gemini API with model: {model_id}") # Add logging
     try:
         async with aiohttp.ClientSession() as session:
