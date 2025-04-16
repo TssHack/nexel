@@ -46,7 +46,7 @@ available_ai_models = {
     # --- New Gemini Models ---
     "2": "Gemini 1.5 Flash",
     "1.5pro": "Gemini 1.5 Pro",
-    "2": "Gemini 2.0 Flash",
+    "22": "Gemini 2.0 Flash",
     "2.5pro": "Gemini 2.5 Pro" # Uncomment if you want to test experimental
     
 }
