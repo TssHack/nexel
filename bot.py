@@ -454,11 +454,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
             api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code"
         response = await call_lama_api(api_prompt, model_id)
 
-    elif model_id.startswith("gemini-"): # Check if it's any of the Gemini models
-        # Specific Gemini Vision handling might be needed here if user provides images
-        if model_id == "gemini-pro-vision" and not is_coding_request:
-             print("Warning: Using Gemini Vision model for text-only chat.")
-             # No specific prompt change here, but keep in mind its primary function
+    elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro"]:
 
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
@@ -471,6 +467,12 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
         print(f"Unknown or unsupported model selected: {model_id}")
         lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
+
+    else:
+        print(f"Unknown or unsupported model selected: {model_id}")
+        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+        return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
+        
     # --- Process API Response ---
     if isinstance(response, str) and response.startswith("API_ERROR:"):
         lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
