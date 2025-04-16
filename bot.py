@@ -464,7 +464,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
 
          response = await call_gemini_api(api_prompt, model_id)  # Pass the actual model_id
 
-     else:
+    else:
          print(f"Unknown or unsupported model selected: {model_id}")
          lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
          return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
