@@ -44,7 +44,7 @@ available_ai_models = {
     "gemma": "Gemma",
     "deepseek": "Deepseek",
     # --- New Gemini Models ---
-    "gemini-1.5-flash-latest": "Gemini 1.5 Flash",
+    "2": "Gemini 1.5 Flash",
     "1.5pro": "Gemini 1.5 Pro",
     "2": "Gemini 2.0 Flash",
     "2.5pro": "Gemini 2.5 Pro" # Uncomment if you want to test experimental
