@@ -42,7 +42,8 @@ available_ai_models = {
     "llama3-free": "Llama3 Free",
     "mixtral": "Mixtral",
     "gemma": "Gemma",
-    "deepseek": "Deepseek",
+    "deepseek-v3": "DeepSeek V3",
+    "deepseek": "Deepseek R1",
     # --- New Gemini Models ---
     "1.5flash-latest": "Gemini 1.5 Flash",
     "1.5pro": "Gemini 1.5 Pro",
@@ -443,7 +444,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
              api_prompt = prompt # General chat prompt
         response = await call_gpt4_api(api_prompt, user_id_str)
 
-    elif model_id.startswith("llama") or model_id in ["mixtral", "gemma", "deepseek"]:
+    elif model_id.startswith("llama") or model_id in ["mixtral", "gemma", "deepseek", "deepseek-v3"]:
         # Lama API - model ID is passed as a parameter
         # Assume these models understand direct prompts well for both chat & code
         api_prompt = prompt
