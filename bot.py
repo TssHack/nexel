@@ -28,23 +28,10 @@ admin_states = {} # State for admin actions {admin_id: action}
 
 # --- Bot Data ---
 coding_languages = [
-    "Node.js", "Laravel", "Python", "Java", "JavaScript", "C#", "C++", "C", 
-    "Swift", "Golang", "Rust", "Kotlin", "TypeScript", "PHP", "Ruby", 
-    "Perl", "Scala", "Dart", "Elixir", "Haskell", "Lua", "R", "Shell", 
-    "Objective-C", "Assembly", "Visual Basic", "ActionScript", "F#", 
-    "Julia", "VHDL", "MATLAB", "Groovy", "SQL", "Tcl", "Prolog", "COBOL", 
-    "Fortran", "Pascal", "Lisp", "Scheme", "Erlang", "Sass", "Fantom", 
-    "Zig", "Crystal", "Vala", "Hack", "Ceylon", "Pike", "OCaml", 
-    "Smalltalk", "AWK", "Chapel", "Mercury", "Io", "Turing", "Curl", 
-    "Xojo", "Mercury", "REXX", "Eiffel", "OpenCL", "Verilog", "ActionScript", 
-    "PostScript", "AutoHotKey", "Delphi", "Zig", "PureScript", "VHDL", 
-    "GLSL", "APL", "Factor", "MQL4", "MQL5", "Processing", "Modelica", 
-    "ChucK", "Nim", "GAMS", "Racket", "Vyper", "Solidity", "Hack", "OpenEdge", 
-    "Dylan", "Fantom", "Squirrel", "Vala", "Pike", "Mercury", "Io", "Euphoria",
-    "Crystal", "Sass", "Xojo", "Red", "SuperCollider", "Wolfram", "J", 
-    "Pike", "SML", "NATURAL", "Verilog", "SystemVerilog", "Turing", 
-    "Fantom", "Forth", "MUMPS", "Oberon", "AutoIt", "PicoLisp", "ActionScript", 
-    "VHDL", "Tcl", "Ladder Logic", "Maxima", "Rebol", "Zig", "ECL"
+    "Node.js", "Python", "Java", "JavaScript", "C#", "C++", 
+    "Swift", "Golang", "Rust", "Kotlin", "TypeScript", "PHP", 
+    "Ruby", "SQL", "Shell", "Objective-C", "MATLAB", 
+    "VHDL", "Solidity", "Delphi", "R", "Elixir", "Lua"
 ]
 
 # Model Identifier: Display Name
