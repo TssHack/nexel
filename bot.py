@@ -697,7 +697,7 @@ async def choose_coding_language(event):
     temp_row = []
     for lang in coding_languages:
         temp_row.append(Button.inline(lang, f"select_code_{lang}".encode()))
-        if len(temp_row) == 2: # Two languages per row
+        if len(temp_row) == 3: # Two languages per row
             rows.append(temp_row)
             temp_row = []
     if temp_row:
