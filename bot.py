@@ -49,7 +49,9 @@ available_ai_models = {
     "1.5flash-latest": "Gemini 1.5 Flash",
     "1.5pro": "Gemini 1.5 Pro",
     "2": "Gemini 2.0 Flash",
-    "2.5pro": "Gemini 2.5 Pro" # Uncomment if you want to test experimental
+    "2.5pro": "Gemini 2.5 Pro",
+    "arcee-ai": "Arcee Ai"
+    # Uncomment if you want to test experimental
     
 }
 DEFAULT_AI_MODEL = "gpt4"
@@ -455,7 +457,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
             api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code. One Only send code no need deskeripshen"
         response = await call_lama_api(api_prompt, model_id)
 
-    elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro"]:
+    elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro", "arcee-ai"]:
          if is_coding_request:
              coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
         # Instruct Gemini for code generation (adjust based on testing)
