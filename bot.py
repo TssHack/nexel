@@ -36,6 +36,7 @@ coding_languages = [
 available_ai_models = {
     "gpt4": "GPT-4",
     "qwen2.5": "Qwen2.5 Coder",
+    "arcee-ai": "Arcee Ai",
     "llama4-maverick": "Llama4 Maverick",
     "llama4-scout": "Llama4 Scout",
     "llama3-70b": "Llama3 70b",
@@ -49,8 +50,7 @@ available_ai_models = {
     "1.5flash-latest": "Gemini 1.5 Flash",
     "1.5pro": "Gemini 1.5 Pro",
     "2": "Gemini 2.0 Flash",
-    "2.5pro": "Gemini 2.5 Pro",
-    "arcee-ai": "Arcee Ai"
+    "2.5pro": "Gemini 2.5 Pro"
     # Uncomment if you want to test experimental
     
 }
@@ -447,7 +447,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
              api_prompt = prompt # General chat prompt
         response = await call_gpt4_api(api_prompt, user_id_str)
 
-    elif model_id.startswith("llama") or model_id in ["qwen2.5", "mixtral", "gemma", "deepseek", "deepseek-v3"]:
+    elif model_id.startswith("llama") or model_id in ["qwen2.5", "mixtral", "gemma", "deepseek", "deepseek-v3", "arcee-ai"]:
         # Lama API - model ID is passed as a parameter
         # Assume these models understand direct prompts well for both chat & code
         api_prompt = prompt
@@ -457,7 +457,7 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
             api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code. One Only send code no need deskeripshen"
         response = await call_lama_api(api_prompt, model_id)
 
-    elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro", "arcee-ai"]:
+    elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro"]:
          if is_coding_request:
              coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
         # Instruct Gemini for code generation (adjust based on testing)
