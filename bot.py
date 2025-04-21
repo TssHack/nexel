@@ -17,7 +17,7 @@ db_file = "users_data.db" # نام فایل دیتابیس جدید
 
 # --- API Endpoints ---
 GPT4_API_URL = "https://api.binjie.fun/api/generateStream"
-LAMA_API_URL = "https://lama-ehsan.vercel.app/chat" # model in query param
+LAMA_API_URL = "https://lama-1.onrender.com/chat" # model in query param
 GEMINI_API_URL = "https://gem-ehsan.vercel.app/gemini/chat" # model in query param
 
 # --- Bot State ---
