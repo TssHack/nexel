@@ -17,7 +17,7 @@ db_file = "users_data.db" # نام فایل دیتابیس جدید
 
 # --- API Endpoints ---
 GPT4_API_URL = "https://api.binjie.fun/api/generateStream"
-LAMA_API_URL = "https://lama-1.onrender.com/chat" # model in query param
+LAMA_API_URL = "http://lama-ehsan.vercel.app/chat" # model in query param
 GEMINI_API_URL = "https://gem-ehsan.vercel.app/gemini/chat" # model in query param
 
 # --- Bot State ---
@@ -554,6 +554,7 @@ async def show_main_menu(event, edit=False, first_start=False):
     buttons = [
         [Button.inline(get_translation('settings_button', lang_code), b"settings"),
          Button.inline(get_translation('coding_button', lang_code), b"coding")],
+        [Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
         [Button.inline(get_translation('help_button', lang_code), b"help")],
         [Button.url(get_translation('developer_button', lang_code), "https://t.me/n6xel")]
     ]
@@ -784,8 +785,8 @@ async def show_help(event):
     await event.edit(
         help_message,
         buttons=[
-            [Button.inline(get_translation('start_coding_button', lang_code), b"coding")],
-             #Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
+            [Button.inline(get_translation('start_coding_button', lang_code), b"coding")
+             Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
             [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
         ]
     )
