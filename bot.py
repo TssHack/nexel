@@ -785,7 +785,7 @@ async def show_help(event):
     await event.edit(
         help_message,
         buttons=[
-            [Button.inline(get_translation('start_coding_button', lang_code), b"coding")
+            [Button.inline(get_translation('start_coding_button', lang_code), b"coding"),
              Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
             [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
         ]
