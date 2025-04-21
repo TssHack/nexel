@@ -343,10 +343,8 @@ async def call_gpt4_api(prompt, user_id_str):
         "referer": "https://chat18.aichatos.xyz/", "user-agent": "Mozilla/5.0",
         "Content-Type": "application/json"
     }
-    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-    ehsan_prompt = code_prompt + prompt
     data = {
-        "prompt": ehsan_prompt, "userId": f"#/{user_id_str}", "network": True,
+        "prompt": prompt, "userId": f"#/{user_id_str}", "network": True,
         "system": "", "withoutContext": False, "stream": False
     }
     try:
@@ -369,13 +367,11 @@ async def call_gpt4_api(prompt, user_id_str):
 async def call_lama_api(prompt, model_id):
     """Calls the Llama API correctly with POST and JSON body."""
     
-    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-    ehsan_prompt = code_prompt + prompt
     try:
         async with aiohttp.ClientSession() as session:
             payload = {
                 "model": model_id,
-                "prompt": ehsan_prompt
+                "prompt": prompt
             }
             async with session.post(
                 LAMA_API_URL,
@@ -399,14 +395,12 @@ async def call_lama_api(prompt, model_id):
 async def call_gemini_api(prompt, model_id):
     """Calls the Gemini API with the specified model ID."""
     # Consider if this prefix is always needed, might interfere with chat
-    code_prompt = "فقط کد رو بده تاکید می کنم فقط کد"
-    ehsan_prompt = code_prompt + prompt
     print(f"Calling Gemini API with model: {model_id}") # Add logging
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GEMINI_API_URL,
-                json={'prompt': ehsan_prompt, 'model': model_id}, # Use the provided model_id
+                json={'prompt': prompt, 'model': model_id}, # Use the provided model_id
                 timeout=aiohttp.ClientTimeout(total=3600) # Increased timeout slightly for potentially larger models
             ) as response:
                 response.raise_for_status()
