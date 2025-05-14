@@ -73,7 +73,7 @@ translations = {
         'coding_button': "🧬 کد نویسی",
         'chat_button': "💬 چت با AI",
         'help_button': "📚 راهنما",
-        'developer_button': "🧑‍💻 ارتباط با توسعه دهنده",
+        'developer_button': "🧑‍💻  عضویت در چنل توسعه دهنده",
         'main_menu_button': "🔙 برگشت به منوی اصلی",
         'settings_title': "⚙️ **تنظیمات ربات**",
         'settings_choose_lang': "زبان رابط کاربری را انتخاب کنید:",
@@ -139,7 +139,7 @@ translations = {
         'coding_button': "🧬 Coding",
         'chat_button': "💬 Chat with AI",
         'help_button': "📚 Help",
-        'developer_button': "🧑‍💻 Contact Developer",
+        'developer_button': "🧑‍💻 Join The Dev Channel",
         'main_menu_button': "🔙 Back to Main Menu",
         'settings_title': "⚙️ **Bot Settings**",
         'settings_choose_lang': "Select Interface Language:",
@@ -550,7 +550,7 @@ async def show_main_menu(event, edit=False, first_start=False):
          Button.inline(get_translation('coding_button', lang_code), b"coding")],
         [Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
         [Button.inline(get_translation('help_button', lang_code), b"help")],
-        [Button.url(get_translation('developer_button', lang_code), "https://t.me/n6xel")]
+        [Button.url(get_translation('developer_button', lang_code), "https://t.me/NexzoTeam")]
     ]
     if user_id == admin_id:
         buttons.append([Button.inline(get_translation('admin_panel_button', lang_code), b"admin_panel")])
