@@ -1,7 +1,10 @@
 # database.py
 import aiosqlite
 import traceback
+import logging
 from config import DB_FILE
+
+logger = logging.getLogger(__name__)
 
 async def initialize_database():
     """Initialize database with required tables"""
@@ -25,13 +28,6 @@ async def initialize_database():
         """)
         
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            )
-        """)
-        
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS mandatory_channels (
                 channel_id INTEGER PRIMARY KEY,
                 channel_username TEXT,
@@ -40,7 +36,7 @@ async def initialize_database():
         """)
         
         await db.commit()
-        print("Database initialized.")
+        logger.info("Database initialized.")
 
 async def add_or_update_user(user_id, username=None, first_name=None):
     """Add or update user in database"""
@@ -70,40 +66,34 @@ async def add_or_update_user(user_id, username=None, first_name=None):
 
             await db.commit()
     except Exception as e:
-        print(f"DB Error in add_or_update_user for {user_id}: {e}")
+        logger.error(f"DB Error in add_or_update_user for {user_id}: {e}")
         traceback.print_exc()
 
 async def get_user_data(user_id):
     """Get user data from database"""
     try:
         async with aiosqlite.connect(DB_FILE) as db:
-            async with db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)) as cursor:
+            async with db.execute("SELECT ui_lang, selected_ai_model FROM users WHERE user_id = ?", (user_id,)) as cursor:
                 row = await cursor.fetchone()
                 if row:
-                    return {
-                        'user_id': row[0],
-                        'username': row[1],
-                        'first_name': row[2],
-                        'ui_lang': row[3],
-                        'selected_ai_model': row[4]
-                    }
+                    return {'ui_lang': row[0], 'selected_ai_model': row[1]}
                 return None
     except Exception as e:
-        print(f"DB Error fetching user data for {user_id}: {e}")
+        logger.error(f"DB Error fetching user data for {user_id}: {e}")
         return None
 
 async def update_user_field(user_id, field, value):
     """Update specific field for user"""
     allowed_fields = ['ui_lang', 'selected_ai_model']
     if field not in allowed_fields:
-        print(f"Attempted to update disallowed field: {field}")
+        logger.error(f"Attempted to update disallowed field: {field}")
         return
     try:
         async with aiosqlite.connect(DB_FILE) as db:
             await db.execute(f"UPDATE users SET {field} = ?, last_seen = CURRENT_TIMESTAMP WHERE user_id = ?", (value, user_id))
             await db.commit()
     except Exception as e:
-        print(f"DB Error updating field {field} for user {user_id}: {e}")
+        logger.error(f"DB Error updating field {field} for user {user_id}: {e}")
 
 async def get_all_user_ids():
     """Get all user IDs from database"""
@@ -113,7 +103,7 @@ async def get_all_user_ids():
                 rows = await cursor.fetchall()
                 return [row[0] for row in rows]
     except Exception as e:
-        print(f"Database error in get_all_user_ids: {e}")
+        logger.error(f"Database error in get_all_user_ids: {e}")
         return []
 
 async def is_admin(user_id):
@@ -123,7 +113,7 @@ async def is_admin(user_id):
             async with db.execute("SELECT 1 FROM admins WHERE user_id = ?", (user_id,)) as cursor:
                 return await cursor.fetchone() is not None
     except Exception as e:
-        print(f"Error checking admin status: {e}")
+        logger.error(f"Error checking admin status: {e}")
         return False
 
 async def add_admin(user_id):
@@ -134,7 +124,7 @@ async def add_admin(user_id):
             await db.commit()
         return True
     except Exception as e:
-        print(f"Error adding admin: {e}")
+        logger.error(f"Error adding admin: {e}")
         return False
 
 async def remove_admin(user_id):
@@ -145,7 +135,7 @@ async def remove_admin(user_id):
             await db.commit()
         return True
     except Exception as e:
-        print(f"Error removing admin: {e}")
+        logger.error(f"Error removing admin: {e}")
         return False
 
 async def get_all_admins():
@@ -156,30 +146,8 @@ async def get_all_admins():
                 rows = await cursor.fetchall()
                 return [row[0] for row in rows]
     except Exception as e:
-        print(f"Error getting admins: {e}")
+        logger.error(f"Error getting admins: {e}")
         return []
-
-async def get_setting(key, default=None):
-    """Get setting value"""
-    try:
-        async with aiosqlite.connect(DB_FILE) as db:
-            async with db.execute("SELECT value FROM settings WHERE key = ?", (key,)) as cursor:
-                row = await cursor.fetchone()
-                return row[0] if row else default
-    except Exception as e:
-        print(f"Error getting setting {key}: {e}")
-        return default
-
-async def set_setting(key, value):
-    """Set setting value"""
-    try:
-        async with aiosqlite.connect(DB_FILE) as db:
-            await db.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
-            await db.commit()
-        return True
-    except Exception as e:
-        print(f"Error setting setting {key}: {e}")
-        return False
 
 async def get_mandatory_channels():
     """Get all mandatory channels"""
@@ -189,7 +157,7 @@ async def get_mandatory_channels():
                 rows = await cursor.fetchall()
                 return [{'id': row[0], 'username': row[1]} for row in rows]
     except Exception as e:
-        print(f"Error getting mandatory channels: {e}")
+        logger.error(f"Error getting mandatory channels: {e}")
         return []
 
 async def add_mandatory_channel(channel_id, channel_username):
@@ -203,7 +171,7 @@ async def add_mandatory_channel(channel_id, channel_username):
             await db.commit()
         return True
     except Exception as e:
-        print(f"Error adding mandatory channel: {e}")
+        logger.error(f"Error adding mandatory channel: {e}")
         return False
 
 async def remove_mandatory_channel(channel_id):
@@ -214,5 +182,5 @@ async def remove_mandatory_channel(channel_id):
             await db.commit()
         return True
     except Exception as e:
-        print(f"Error removing mandatory channel: {e}")
+        logger.error(f"Error removing mandatory channel: {e}")
         return False
