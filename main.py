@@ -5,71 +5,30 @@ import traceback
 from telethon import TelegramClient, events, Button
 import aiosqlite
 import aiohttp
-from config import API_ID, API_HASH, SESSION_NAME, DB_FILE
+from config import API_ID, API_HASH, SESSION_NAME, DEFAULT_ADMIN_ID, AVAILABLE_AI_MODELS, CODING_LANGUAGES, EXT_MAP
 from database import initialize_database, add_or_update_user, get_user_data, update_user_field
 from database import get_all_user_ids, is_admin, add_admin, remove_admin, get_all_admins
 from database import get_mandatory_channels, add_mandatory_channel, remove_mandatory_channel
 from panel import show_admin_panel, admin_manage_mandatory_channels, admin_add_mandatory_channel
 from panel import admin_remove_mandatory_channel, admin_add_admin, admin_remove_admin
 from translations import get_translation
+from utils import get_user_pref, set_user_pref
 
 # Bot State
 bot_active = True
 user_data = {}
 admin_states = {}
 
-# AI Models
-available_ai_models = {
-    "gpt4": "GPT-4",
-    "qwen2.5": "Qwen2.5 Coder",
-    "arcee-ai": "Arcee Ai",
-    # ... other models
-}
-
 # Initialize client
 client = TelegramClient(SESSION_NAME, API_ID, API_HASH)
 
 # Helper Functions
-async def get_user_pref(user_id, key, default_value=None):
-    """Gets a specific preference for a user, fetching from DB if not in memory."""
-    if user_id not in user_data:
-        db_data = await get_user_data(user_id)
-        if db_data:
-            user_data[user_id] = {
-                'ui_lang': db_data['ui_lang'],
-                'coding_lang': None,
-                'ai_model': db_data['selected_ai_model'],
-                'is_chatting': False,
-                'last_prompt': None
-            }
-        else:
-            user_data[user_id] = {
-                'ui_lang': 'fa',
-                'coding_lang': None,
-                'ai_model': 'gpt4',
-                'is_chatting': False,
-                'last_prompt': None
-            }
-    
-    return user_data.get(user_id, {}).get(key, default_value)
-
-async def set_user_pref(user_id, key, value):
-    """Sets a user preference in memory and updates the DB if applicable."""
-    if user_id not in user_data:
-        await get_user_pref(user_id, 'ui_lang')  # Ensure user_data[user_id] exists
-
-    user_data[user_id][key] = value
-
-    # Persist relevant preferences to DB
-    if key in ['ui_lang', 'selected_ai_model']:
-        await update_user_field(user_id, key, value)
-
-async def show_main_menu(event, edit=False, first_start=False):
+async def show_main_menu(event, user_data, edit=False, first_start=False):
     """Displays the main menu."""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
-    ai_model_id = await get_user_pref(user_id, 'ai_model', 'gpt4')
-    ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    ai_model_id = await get_user_pref(user_data, user_id, 'ai_model', 'gpt4')
+    ai_model_name = AVAILABLE_AI_MODELS.get(ai_model_id, "Unknown")
 
     buttons = [
         [Button.inline(get_translation('settings_button', lang_code), b"settings"),
@@ -127,7 +86,7 @@ async def start(event):
     mandatory_channels = await get_mandatory_channels()
     if mandatory_channels:
         channel_list = "\n".join([f"- @{ch['username']}" for ch in mandatory_channels])
-        lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+        lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
         
         buttons = [
             [Button.inline(get_translation('joined_button', lang_code), b"check_membership")],
@@ -141,13 +100,13 @@ async def start(event):
         return
 
     # Show main menu
-    await show_main_menu(event, edit=False, first_start=True)
+    await show_main_menu(event, user_data, edit=False, first_start=True)
 
 @client.on(events.CallbackQuery(data=b"check_membership"))
 async def check_membership(event):
     user_id = event.sender_id
     mandatory_channels = await get_mandatory_channels()
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     all_joined = True
     for channel in mandatory_channels:
@@ -160,57 +119,57 @@ async def check_membership(event):
     
     if all_joined:
         await event.answer("✅ Verified! You can now use the bot.", alert=True)
-        await show_main_menu(event, edit=True)
+        await show_main_menu(event, user_data, edit=True)
     else:
         await event.answer("❌ You haven't joined all channels yet!", alert=True)
 
 @client.on(events.NewMessage(pattern='/admin'))
 async def admin_command(event):
     if await is_admin(event.sender_id):
-        await show_admin_panel(event)
+        await show_admin_panel(event, bot_active, user_data)
     else:
-        lang_code = await get_user_pref(event.sender_id, 'ui_lang', 'fa')
+        lang_code = await get_user_pref(user_data, event.sender_id, 'ui_lang', 'fa')
         await event.respond(get_translation('admin_not_allowed', lang_code))
 
 @client.on(events.CallbackQuery(data=b"admin_panel"))
 async def admin_panel_callback(event):
     if await is_admin(event.sender_id):
-        await show_admin_panel(event, edit=True)
+        await show_admin_panel(event, bot_active, user_data, edit=True)
     else:
-        await event.answer(get_translation('admin_not_allowed', await get_user_pref(event.sender_id, 'ui_lang', 'fa')), alert=True)
+        await event.answer(get_translation('admin_not_allowed', await get_user_pref(user_data, event.sender_id, 'ui_lang', 'fa')), alert=True)
 
 @client.on(events.CallbackQuery(data=b"admin_mandatory_channels"))
 async def admin_mandatory_channels(event):
     if await is_admin(event.sender_id):
-        await admin_manage_mandatory_channels(event)
+        await admin_manage_mandatory_channels(event, user_data, admin_states)
     else:
         await event.answer("Access denied!", alert=True)
 
 @client.on(events.CallbackQuery(data=b"admin_add_mandatory_channel"))
 async def admin_add_mandatory_channel_callback(event):
     if await is_admin(event.sender_id):
-        await admin_add_mandatory_channel(event)
+        await admin_add_mandatory_channel(event, user_data, admin_states)
     else:
         await event.answer("Access denied!", alert=True)
 
 @client.on(events.CallbackQuery(data=b"admin_remove_mandatory_channel"))
 async def admin_remove_mandatory_channel_callback(event):
     if await is_admin(event.sender_id):
-        await admin_remove_mandatory_channel(event)
+        await admin_remove_mandatory_channel(event, user_data, client)
     else:
         await event.answer("Access denied!", alert=True)
 
 @client.on(events.CallbackQuery(data=b"admin_add_admin"))
 async def admin_add_admin_callback(event):
     if await is_admin(event.sender_id):
-        await admin_add_admin(event)
+        await admin_add_admin(event, user_data, admin_states)
     else:
         await event.answer("Access denied!", alert=True)
 
 @client.on(events.CallbackQuery(data=b"admin_remove_admin"))
 async def admin_remove_admin_callback(event):
     if await is_admin(event.sender_id):
-        await admin_remove_admin(event)
+        await admin_remove_admin(event, user_data, client)
     else:
         await event.answer("Access denied!", alert=True)
 
@@ -223,7 +182,7 @@ async def remove_channel_callback(event):
     channel_id = int(event.pattern_match.group(1).decode('utf-8'))
     if await remove_mandatory_channel(channel_id):
         await event.answer("Channel removed successfully!", alert=True)
-        await admin_manage_mandatory_channels(event)
+        await admin_manage_mandatory_channels(event, user_data, admin_states)
     else:
         await event.answer("Failed to remove channel!", alert=True)
 
@@ -236,11 +195,23 @@ async def remove_admin_callback(event):
     admin_id = int(event.pattern_match.group(1).decode('utf-8'))
     if await remove_admin(admin_id):
         await event.answer("Admin removed successfully!", alert=True)
-        await admin_remove_admin(event)
+        await admin_remove_admin(event, user_data, client)
     else:
         await event.answer("Failed to remove admin!", alert=True)
 
-# Handle mandatory channel input
+@client.on(events.CallbackQuery(data=b"admin_toggle_status"))
+async def admin_toggle_bot_status(event):
+    global bot_active
+    if await is_admin(event.sender_id):
+        bot_active = not bot_active
+        lang_code = await get_user_pref(user_data, event.sender_id, 'ui_lang', 'fa')
+        status_msg = get_translation('admin_bot_on_msg', lang_code) if bot_active else get_translation('admin_bot_off_msg', lang_code)
+        await event.answer(status_msg, alert=True)
+        await show_admin_panel(event, bot_active, user_data, edit=True)
+    else:
+        await event.answer()
+
+# Handle admin states
 @client.on(events.NewMessage)
 async def handle_message(event):
     user_id = event.sender_id
@@ -259,7 +230,7 @@ async def handle_message(event):
                     if await add_mandatory_channel(channel_id, channel_username):
                         await event.respond(f"✅ Channel {user_input} added successfully!")
                         del admin_states[user_id]
-                        await admin_manage_mandatory_channels(event)
+                        await admin_manage_mandatory_channels(event, user_data, admin_states)
                     else:
                         await event.respond("❌ Failed to add channel!")
                 except Exception as e:
@@ -280,7 +251,7 @@ async def handle_message(event):
                 if await add_admin(admin_id):
                     await event.respond(f"✅ Admin added successfully!")
                     del admin_states[user_id]
-                    await show_admin_panel(event)
+                    await show_admin_panel(event, bot_active, user_data)
                 else:
                     await event.respond("❌ Failed to add admin!")
             except Exception as e:
@@ -294,9 +265,8 @@ async def main():
     await initialize_database()
     
     # Add default admin if not exists
-    default_admin_id = 7094106651
-    if not await is_admin(default_admin_id):
-        await add_admin(default_admin_id)
+    if not await is_admin(DEFAULT_ADMIN_ID):
+        await add_admin(DEFAULT_ADMIN_ID)
     
     print("Starting bot...")
     await client.start()
