@@ -29,6 +29,71 @@ available_ai_models = {
 # Initialize client
 client = TelegramClient(SESSION_NAME, API_ID, API_HASH)
 
+# Helper Functions
+async def get_user_pref(user_id, key, default_value=None):
+    """Gets a specific preference for a user, fetching from DB if not in memory."""
+    if user_id not in user_data:
+        db_data = await get_user_data(user_id)
+        if db_data:
+            user_data[user_id] = {
+                'ui_lang': db_data['ui_lang'],
+                'coding_lang': None,
+                'ai_model': db_data['selected_ai_model'],
+                'is_chatting': False,
+                'last_prompt': None
+            }
+        else:
+            user_data[user_id] = {
+                'ui_lang': 'fa',
+                'coding_lang': None,
+                'ai_model': 'gpt4',
+                'is_chatting': False,
+                'last_prompt': None
+            }
+    
+    return user_data.get(user_id, {}).get(key, default_value)
+
+async def set_user_pref(user_id, key, value):
+    """Sets a user preference in memory and updates the DB if applicable."""
+    if user_id not in user_data:
+        await get_user_pref(user_id, 'ui_lang')  # Ensure user_data[user_id] exists
+
+    user_data[user_id][key] = value
+
+    # Persist relevant preferences to DB
+    if key in ['ui_lang', 'selected_ai_model']:
+        await update_user_field(user_id, key, value)
+
+async def show_main_menu(event, edit=False, first_start=False):
+    """Displays the main menu."""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    ai_model_id = await get_user_pref(user_id, 'ai_model', 'gpt4')
+    ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
+
+    buttons = [
+        [Button.inline(get_translation('settings_button', lang_code), b"settings"),
+         Button.inline(get_translation('coding_button', lang_code), b"coding")],
+        [Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
+        [Button.inline(get_translation('help_button', lang_code), b"help")],
+        [Button.url(get_translation('developer_button', lang_code), "https://t.me/NexzoTeam")]
+    ]
+    if await is_admin(user_id):
+        buttons.append([Button.inline(get_translation('admin_panel_button', lang_code), b"admin_panel")])
+
+    if first_start:
+        text = get_translation('start_welcome', lang_code)
+    else:
+        text = get_translation('welcome', lang_code, ai_model_name=ai_model_name)
+
+    action = event.edit if edit else event.respond
+    try:
+        await action(text, buttons=buttons)
+    except Exception as e:
+        print(f"Error showing main menu ({'edit' if edit else 'respond'}): {e}")
+        if edit:
+            await event.respond(text, buttons=buttons)
+
 # Event Handlers
 @client.on(events.NewMessage(pattern='/start'))
 async def start(event):
