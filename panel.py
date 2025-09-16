@@ -4,6 +4,9 @@ from database import get_all_user_ids, get_mandatory_channels, add_mandatory_cha
 from database import is_admin, get_all_admins, add_admin, remove_admin
 from translations import get_translation
 from utils import get_user_pref, set_user_pref
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def show_admin_panel(event, bot_active, user_data, edit=False):
     """Display admin panel"""
@@ -28,8 +31,9 @@ async def show_admin_panel(event, bot_active, user_data, edit=False):
     action = event.edit if edit else event.respond
     try:
         await action(text, buttons=buttons)
+        logger.info(f"Admin panel shown to admin {user_id}")
     except Exception as e:
-        print(f"Error showing admin panel: {e}")
+        logger.error(f"Error showing admin panel: {e}")
         if edit:
             await event.respond(text, buttons=buttons)
 
@@ -59,6 +63,7 @@ async def admin_manage_mandatory_channels(event, user_data, admin_states):
         ]
     
     await event.edit(text, buttons=buttons)
+    logger.info(f"Mandatory channels management shown to admin {user_id}")
 
 async def admin_add_mandatory_channel(event, user_data, admin_states):
     """Add mandatory channel"""
@@ -70,6 +75,7 @@ async def admin_add_mandatory_channel(event, user_data, admin_states):
         "Send the channel username (e.g., @channel_name):",
         buttons=[Button.inline("🔙 Back", b"admin_mandatory_channels")]
     )
+    logger.info(f"Admin {user_id} adding mandatory channel")
 
 async def admin_remove_mandatory_channel(event, user_data, client):
     """Remove mandatory channel"""
@@ -94,6 +100,7 @@ async def admin_remove_mandatory_channel(event, user_data, client):
         "Select channel to remove:",
         buttons=buttons
     )
+    logger.info(f"Admin {user_id} removing mandatory channel")
 
 async def admin_add_admin(event, user_data, admin_states):
     """Add new admin"""
@@ -105,6 +112,7 @@ async def admin_add_admin(event, user_data, admin_states):
         "Send the user ID or username of the new admin:",
         buttons=[Button.inline("🔙 Back", b"admin_panel")]
     )
+    logger.info(f"Admin {user_id} adding new admin")
 
 async def admin_remove_admin(event, user_data, client):
     """Remove admin"""
@@ -136,3 +144,55 @@ async def admin_remove_admin(event, user_data, client):
         "Select admin to remove:",
         buttons=buttons
     )
+    logger.info(f"Admin {user_id} removing admin")
+
+async def admin_list_users(event, user_data):
+    """List all users"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    
+    try:
+        from database import aiosqlite
+        async with aiosqlite.connect("users_data.db") as db:
+            async with db.execute("SELECT user_id, username, first_name, last_seen FROM users ORDER BY last_seen DESC LIMIT 50") as cursor:
+                users = await cursor.fetchall()
+        
+        if not users:
+            await event.edit("**No users found in the database.**", 
+                           buttons=[Button.inline("🔙 Back", b"admin_panel")])
+            return
+        
+        user_list = "**👥 Bot Users (Last 50):**\n\n"
+        for user in users:
+            user_id, username, first_name, last_seen = user
+            username_str = username if username else "N/A"
+            first_name_str = first_name if first_name else "N/A"
+            user_list += f"👤 `{user_id}`\n   Name: {first_name_str}\n   Username: @{username_str}\n   Last Seen: {last_seen}\n\n"
+        
+        # Split into multiple messages if too long
+        if len(user_list) > 4000:
+            parts = [user_list[i:i+4000] for i in range(0, len(user_list), 4000)]
+            for i, part in enumerate(parts):
+                if i == 0:
+                    await event.edit(part, buttons=[Button.inline("🔙 Back", b"admin_panel")])
+                else:
+                    await event.respond(part)
+        else:
+            await event.edit(user_list, buttons=[Button.inline("🔙 Back", b"admin_panel")])
+        
+        logger.info(f"Admin {user_id} listed users")
+    except Exception as e:
+        logger.error(f"Error listing users: {e}")
+        await event.edit(f"Error: {str(e)}", buttons=[Button.inline("🔙 Back", b"admin_panel")])
+
+async def admin_broadcast(event, user_data, admin_states):
+    """Start broadcast message"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    
+    admin_states[user_id] = 'awaiting_broadcast_message'
+    await event.edit(
+        get_translation('admin_ask_broadcast', lang_code),
+        buttons=[Button.inline("🔙 Back", b"admin_panel")]
+    )
+    logger.info(f"Admin {user_id} starting broadcast")
