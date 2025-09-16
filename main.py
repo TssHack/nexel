@@ -53,6 +53,99 @@ async def show_main_menu(event, user_data, edit=False, first_start=False):
         if edit:
             await event.respond(text, buttons=buttons)
 
+async def show_settings_menu(event, user_data):
+    """Display settings menu"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+
+    buttons = [
+        [Button.inline(get_translation('settings_lang_button', lang_code), b"change_ui_lang")],
+        [Button.inline(get_translation('settings_model_button', lang_code), b"select_ai_model")],
+        [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
+    ]
+    text = get_translation('settings_title', lang_code)
+    await event.edit(text, buttons=buttons)
+
+async def show_ui_language_options(event, user_data):
+    """Show language selection options"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+
+    buttons = [
+        [Button.inline("🇬🇧 English", b"set_lang_en")],
+        [Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
+        [Button.inline(get_translation('back_to_settings', lang_code), b"settings")]
+    ]
+    text = get_translation('settings_choose_lang', lang_code)
+    await event.edit(text, buttons=buttons)
+
+async def show_ai_model_options(event, user_data):
+    """Show AI model selection options"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    current_model = await get_user_pref(user_data, user_id, 'selected_ai_model', 'gpt4')
+
+    buttons = []
+    temp_row = []
+    for model_id, display_name in AVAILABLE_AI_MODELS.items():
+        prefix = "✅ " if model_id == current_model else ""
+        temp_row.append(Button.inline(f"{prefix}{display_name}", f"set_model_{model_id}".encode()))
+        if len(temp_row) == 2:
+            buttons.append(temp_row)
+            temp_row = []
+    if temp_row:
+        buttons.append(temp_row)
+
+    buttons.append([Button.inline(get_translation('back_to_settings', lang_code), b"settings")])
+    text = get_translation('settings_choose_model', lang_code)
+    await event.edit(text, buttons=buttons)
+
+async def choose_coding_language(event, user_data):
+    """Show coding language selection"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+
+    rows = []
+    temp_row = []
+    for lang in CODING_LANGUAGES:
+        temp_row.append(Button.inline(lang, f"select_code_{lang}".encode()))
+        if len(temp_row) == 3:
+            rows.append(temp_row)
+            temp_row = []
+    if temp_row:
+        rows.append(temp_row)
+
+    rows.append([Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")])
+
+    await event.edit(
+        get_translation('choose_coding_lang', lang_code),
+        buttons=rows
+    )
+    await set_user_pref(user_data, user_id, 'is_chatting', False)
+
+async def show_help(event, user_data):
+    """Show help information"""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    ai_model_id = await get_user_pref(user_data, user_id, 'selected_ai_model', 'gpt4')
+    ai_model_name = AVAILABLE_AI_MODELS.get(ai_model_id, "Unknown")
+
+    help_message = get_translation('help_title', lang_code) + "\n\n" + \
+                   get_translation('help_text', lang_code,
+                                   coding_button=get_translation('coding_button', lang_code),
+                                   chat_button=get_translation('chat_button', lang_code),
+                                   settings_button=get_translation('settings_button', lang_code),
+                                   ai_model_name=ai_model_name)
+
+    await event.edit(
+        help_message,
+        buttons=[
+            [Button.inline(get_translation('start_coding_button', lang_code), b"coding"),
+             Button.inline(get_translation('chat_button', lang_code), b"start_chat")],
+            [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
+        ]
+    )
+
 # Event Handlers
 @client.on(events.NewMessage(pattern='/start'))
 async def start(event):
@@ -211,6 +304,127 @@ async def admin_toggle_bot_status(event):
     else:
         await event.answer()
 
+# Main Menu Buttons
+@client.on(events.CallbackQuery(data=b"settings"))
+async def settings_callback(event):
+    await show_settings_menu(event, user_data)
+
+@client.on(events.CallbackQuery(data=b"coding"))
+async def coding_callback(event):
+    await choose_coding_language(event, user_data)
+
+@client.on(events.CallbackQuery(data=b"start_chat"))
+async def start_chat_callback(event):
+    user_id = event.sender_id
+    await set_user_pref(user_data, user_id, 'is_chatting', True)
+    await set_user_pref(user_data, user_id, 'coding_lang', None)
+    
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    ai_model_id = await get_user_pref(user_data, user_id, 'selected_ai_model', 'gpt4')
+    ai_model_name = AVAILABLE_AI_MODELS.get(ai_model_id, "Unknown")
+
+    await event.edit(
+        get_translation('start_chat_prompt', lang_code, ai_model_name=ai_model_name),
+        buttons=[Button.inline(get_translation('stop_chat_button', lang_code), b"stop_chat")]
+    )
+
+@client.on(events.CallbackQuery(data=b"help"))
+async def help_callback(event):
+    await show_help(event, user_data)
+
+@client.on(events.CallbackQuery(data=b"main_menu"))
+async def main_menu_callback(event):
+    user_id = event.sender_id
+    await set_user_pref(user_data, user_id, 'coding_lang', None)
+    await set_user_pref(user_data, user_id, 'is_chatting', False)
+    await set_user_pref(user_data, user_id, 'last_prompt', None)
+    await show_main_menu(event, user_data, edit=True)
+
+# Settings Buttons
+@client.on(events.CallbackQuery(data=b"change_ui_lang"))
+async def change_ui_lang_callback(event):
+    await show_ui_language_options(event, user_data)
+
+@client.on(events.CallbackQuery(data=b"select_ai_model"))
+async def select_ai_model_callback(event):
+    await show_ai_model_options(event, user_data)
+
+@client.on(events.CallbackQuery(pattern=b"set_lang_(.*)"))
+async def set_lang_callback(event):
+    user_id = event.sender_id
+    new_lang_code = event.pattern_match.group(1).decode('utf-8')
+
+    if new_lang_code in ['fa', 'en']:
+        await set_user_pref(user_data, user_id, 'ui_lang', new_lang_code)
+        await update_user_field(user_id, 'ui_lang', new_lang_code)
+        await event.answer(get_translation('settings_lang_selected', new_lang_code), alert=True)
+        await show_settings_menu(event, user_data)
+    else:
+        await event.answer("Invalid language code.", alert=True)
+
+@client.on(events.CallbackQuery(pattern=b"set_model_(.*)"))
+async def set_model_callback(event):
+    user_id = event.sender_id
+    model_id = event.pattern_match.group(1).decode('utf-8')
+
+    if model_id in AVAILABLE_AI_MODELS:
+        await set_user_pref(user_data, user_id, 'selected_ai_model', model_id)
+        await update_user_field(user_id, 'selected_ai_model', model_id)
+        lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+        model_name = AVAILABLE_AI_MODELS[model_id]
+        await event.answer(get_translation('settings_model_selected', lang_code, model_name=model_name), alert=True)
+        await show_settings_menu(event, user_data)
+    else:
+        await event.answer("Invalid AI model selected.", alert=True)
+
+# Coding Buttons
+@client.on(events.CallbackQuery(pattern=b"select_code_(.*)"))
+async def select_code_callback(event):
+    user_id = event.sender_id
+    selected_lang = event.pattern_match.group(1).decode('utf-8')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+    ai_model_id = await get_user_pref(user_data, user_id, 'selected_ai_model', 'gpt4')
+    ai_model_name = AVAILABLE_AI_MODELS.get(ai_model_id, "Unknown")
+
+    if selected_lang in CODING_LANGUAGES:
+        await set_user_pref(user_data, user_id, 'coding_lang', selected_lang)
+        await set_user_pref(user_data, user_id, 'is_chatting', False)
+        await set_user_pref(user_data, user_id, 'last_prompt', None)
+
+        await event.edit(
+            get_translation('coding_lang_selected', lang_code, lang=selected_lang, ai_model_name=ai_model_name),
+            buttons=[
+                Button.inline(get_translation('back_to_lang_menu', lang_code), b"coding"),
+                Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")
+            ]
+        )
+    else:
+        await event.answer("Invalid language selected.", alert=True)
+
+# Chat Buttons
+@client.on(events.CallbackQuery(data=b"stop_chat"))
+async def stop_chat_callback(event):
+    user_id = event.sender_id
+    await set_user_pref(user_data, user_id, 'is_chatting', False)
+    await show_main_menu(event, user_data, edit=True)
+
+# Retry Button
+@client.on(events.CallbackQuery(data=b"retry_last_prompt"))
+async def retry_last_prompt_callback(event):
+    user_id = event.sender_id
+    last_prompt = await get_user_pref(user_data, user_id, 'last_prompt')
+    coding_lang = await get_user_pref(user_data, user_id, 'coding_lang')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+
+    if not last_prompt or not coding_lang:
+        await event.answer("No prompt to retry or coding language not set.", alert=True)
+        return
+
+    await event.answer("🔄 Retrying...")
+    # Here you would normally process the prompt again
+    # For now, just show a message
+    await event.respond(f"Retrying: {last_prompt}\nLanguage: {coding_lang}")
+
 # Handle admin states
 @client.on(events.NewMessage)
 async def handle_message(event):
@@ -258,7 +472,42 @@ async def handle_message(event):
                 await event.respond(f"❌ Error: {str(e)}")
             return
     
-    # ... rest of the message handling logic ...
+    # Handle chat mode
+    is_chatting = await get_user_pref(user_data, user_id, 'is_chatting', False)
+    if is_chatting:
+        lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+        processing_msg = await event.respond(get_translation('processing', lang_code))
+        
+        # Here you would normally process the chat message
+        # For now, just show a response
+        await processing_msg.edit(f"Chat response: {user_input}")
+        return
+    
+    # Handle coding mode
+    coding_lang = await get_user_pref(user_data, user_id, 'coding_lang')
+    if coding_lang:
+        lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
+        processing_msg = await event.respond(get_translation('processing', lang_code))
+        
+        # Save the prompt for retry
+        await set_user_pref(user_data, user_id, 'last_prompt', user_input)
+        
+        # Here you would normally process the coding request
+        # For now, just show a response
+        await processing_msg.edit(
+            f"Code generated for {coding_lang}:\n```python\n# Your code here\nprint('{user_input}')\n```",
+            buttons=[
+                Button.inline(get_translation('new_question_button', lang_code, lang=coding_lang), f"select_code_{coding_lang}".encode()),
+                Button.inline(get_translation('back_to_lang_menu', lang_code), b"coding"),
+                Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")
+            ],
+            parse_mode='md'
+        )
+        return
+    
+    # If we get here, the user sent a message without being in a specific mode
+    # Just show the main menu
+    await show_main_menu(event, user_data, edit=False)
 
 # Main function
 async def main():
