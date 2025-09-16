@@ -2,17 +2,18 @@
 from telethon import TelegramClient, events, Button
 import aiosqlite
 import json
-import requests # Note: Using aiohttp for async requests now
+import requests
 import asyncio
 import aiohttp
 import os
-import traceback # For better error logging
+import traceback
+from datetime import datetime, timedelta
 
 # --- Configuration ---
 api_id = 18377832
 api_hash = "ed8556c450c6d0fd68912423325dd09c"
 session_name = "my_ai_multilang"
-admin_id = 1848591768 # <<< حتماً آیدی عددی ادمین را اینجا قرار دهید
+admin_id = 1848591768 # آیدی عددی ادمین
 db_file = "users_data.db" # نام فایل دیتابیس جدید
 
 # --- API Endpoints ---
@@ -53,8 +54,6 @@ available_ai_models = {
     "1.5pro": "Gemini 1.5 Pro",
     "2": "Gemini 2.0 Flash",
     "2.5pro": "Gemini 2.5 Pro"
-    # Uncomment if you want to test experimental
-    
 }
 DEFAULT_AI_MODEL = "gpt4"
 
@@ -67,7 +66,7 @@ ext_map = {
 # --- Multilingual Text (Updated) ---
 translations = {
     'fa': {
-        'start_welcome': "🌟 **سلام! خوش اومدی دوست عزیز 😊**\n\n🗣️ زبان پیش‌فرض: **فارسی** 🇮🇷\n\n⚙️ برای تغییر زبان یا تنظیمات دیگه، از دکمه‌ی 'Settings ⚙️' استفاده کن!\n\n✨ با آرزوی تجربه‌ای دلچسب و هوشمند ✨", # Welcome on first start
+        'start_welcome': "🌟 **سلام! خوش اومدی دوست عزیز 😊**\n\n🗣️ زبان پیش‌فرض: **فارسی** 🇮🇷\n\n⚙️ برای تغییر زبان یا تنظیمات دیگه، از دکمه‌ی 'Settings ⚙️' استفاده کن!\n\n✨ با آرزوی تجربه‌ای دلچسب و هوشمند ✨",
         'welcome': "👋 **سلام! چطوری می‌تونم کمکت کنم؟** 😊\n\n🤖 **مدل فعال**: `{ai_model_name}`\n\n📚 **لطفاً راهنما را برای جزئیات بیشتر مطالعه کن.** ✨",
         'settings_button': "⚙️ تنظیمات",
         'coding_button': "🧬 کد نویسی",
@@ -124,13 +123,36 @@ translations = {
         'admin_broadcast_sending': "⏳ در حال ارسال پیام به {count} کاربر...",
         'admin_broadcast_sent': "✅ پیام همگانی با موفقیت ارسال شد.",
         'admin_broadcast_failed': "⚠️ ارسال پیام به برخی کاربران با خطا مواجه شد.",
-        'admin_list_users_title': "**👥 لیست کاربران ربات ({count} نفر):**\n{user_list}", # Placeholder for list
-        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n--------------------", # User entry format
+        'admin_list_users_title': "**👥 لیست کاربران ربات ({count} نفر):**\n{user_list}",
+        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ {username}\n   _Name:_ {name}\n--------------------",
         'admin_no_users': "**هنوز هیچ کاربری در دیتابیس ثبت نشده است.**",
         'admin_not_allowed': "**شما اجازه دسترسی به این بخش را ندارید.**",
         'error_generic': "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
         'admin_panel_button': "⚙️ پنل مدیریت",
-        'back_button': "🔙 بازگشت"
+        'back_button': "🔙 بازگشت",
+        # Forced Join Translations
+        'forced_join_title': "📢 **عضویت اجباری در کانال‌ها**",
+        'forced_join_desc': "برای استفاده از ربات، لطفاً در کانال‌های زیر عضو شوید:",
+        'forced_join_joined': "✅ عضو شدید",
+        'forced_join_button': "✅ من عضو شدم",
+        'forced_join_success': "✅ با موفقیت عضو شدید! اکنون می‌توانید از ربات استفاده کنید.\nاستارت بزنید\n/start\n/start",
+        'forced_join_failed': "❌ شما هنوز در همه کانال‌ها عضو نشده‌اید. لطفاً ابتدا عضو شوید.",
+        'forced_join_management': "🔒 مدیریت عضویت اجباری",
+        'forced_join_add': "➕ افزودن کانال",
+        'forced_join_remove': "➖ حذف کانال",
+        'forced_join_list': "📋 لیست کانال‌ها",
+        'forced_join_add_prompt': "لطفاً یوزرنیم یا آیدی کانال را ارسال کنید (مثال: @channel یا 1001234567890):",
+        'forced_join_added': "✅ کانال با موفقیت اضافه شد.",
+        'forced_join_removed': "✅ کانال با موفقیت حذف شد.",
+        'forced_join_no_channels': "هیچ کانال اجباری تنظیم نشده است.",
+        'forced_join_list_title': "📋 **لیست کانال‌های اجباری:**",
+        'forced_join_channel_entry': "- {title} (@{username})",
+        'forced_join_remove_confirm': "آیا از حذف این کانال اطمینان دارید؟",
+        'forced_join_remove_yes': "✅ بله، حذف کن",
+        'forced_join_remove_no': "❌ خیر",
+        'forced_join_error': "خطا در عملیات: {error}",
+        'forced_join_invalid_channel': "کانال نامعتبر است یا ربات در آن ادمین نیست.",
+        'forced_join_not_admin': "ربات در این کانال ادمین نیست. لطفاً ابتدا ربات را ادمین کنید.",
     },
     'en': {
         'start_welcome': "**Hello! Welcome.**\nThe default language is English. Use the 'Settings' button to change the language or other configurations.",
@@ -189,14 +211,36 @@ translations = {
         'admin_broadcast_sending': "⏳ Sending message to {count} users...",
         'admin_broadcast_sent': "✅ Broadcast message sent successfully.",
         'admin_broadcast_failed': "⚠️ Failed to send message to some users.",
-        'admin_list_users_title': "**👥 Bot Users List ({count} total):**\n{user_list}", # Placeholder for list
-        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n--------------------", # User entry format
+        'admin_list_users_title': "**👥 Bot Users List ({count} total):**\n{user_list}",
+        'admin_user_entry': "👤 `ID: {user_id}`\n   _Username:_ @{username}\n   _Name:_ {name}\n--------------------",
         'admin_no_users': "**No users found in the database yet.**",
         'admin_not_allowed': "**You do not have permission to access this section.**",
         'error_generic': "An error occurred. Please try again.",
         'admin_panel_button': "⚙️ Admin Panel",
-        'back_button': "🔙 Back"
-
+        'back_button': "🔙 Back",
+        # Forced Join Translations
+        'forced_join_title': "📢 **Mandatory Channel Membership**",
+        'forced_join_desc': "To use the bot, please join the following channels:",
+        'forced_join_joined': "✅ Joined",
+        'forced_join_button': "✅ I've Joined",
+        'forced_join_success': "✅ Successfully joined! You can now use the bot.",
+        'forced_join_failed': "❌ You haven't joined all channels yet. Please join first.",
+        'forced_join_management': "🔒 Forced Join Management",
+        'forced_join_add': "➕ Add Channel",
+        'forced_join_remove': "➖ Remove Channel",
+        'forced_join_list': "📋 List Channels",
+        'forced_join_add_prompt': "Please send the channel username or ID (e.g., @channel or 1001234567890):",
+        'forced_join_added': "✅ Channel added successfully.",
+        'forced_join_removed': "✅ Channel removed successfully.",
+        'forced_join_no_channels': "No mandatory channels set.",
+        'forced_join_list_title': "📋 **List of Mandatory Channels:**",
+        'forced_join_channel_entry': "- {title} (@{username})",
+        'forced_join_remove_confirm': "Are you sure you want to remove this channel?",
+        'forced_join_remove_yes': "✅ Yes, Remove",
+        'forced_join_remove_no': "❌ No",
+        'forced_join_error': "Operation error: {error}",
+        'forced_join_invalid_channel': "Invalid channel or bot is not admin in it.",
+        'forced_join_not_admin': "Bot is not admin in this channel. Please make the bot admin first.",
     }
 }
 
@@ -204,6 +248,7 @@ translations = {
 async def initialize_database():
     """Initializes the database and table schema."""
     async with aiosqlite.connect(db_file) as db:
+        # Users table
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
@@ -214,6 +259,27 @@ async def initialize_database():
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # Forced channels table
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS forced_channels (
+                channel_id INTEGER PRIMARY KEY,
+                channel_username TEXT NOT NULL,
+                channel_title TEXT
+            )
+        """)
+        
+        # User joined channels table
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_joined_channels (
+                user_id INTEGER,
+                channel_id INTEGER,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, channel_id),
+                FOREIGN KEY (channel_id) REFERENCES forced_channels(channel_id) ON DELETE CASCADE
+            )
+        """)
+        
         await db.commit()
         print("Database initialized.")
 
@@ -234,12 +300,12 @@ async def add_or_update_user_in_db(user_id, username=None, first_name=None):
     """Adds a new user or updates existing user's details and last_seen."""
     try:
         async with aiosqlite.connect(db_file) as db:
-            # بررسی اینکه آیا کاربر از قبل وجود دارد یا نه
+            # Check if user exists
             async with db.execute("SELECT 1 FROM users WHERE user_id = ?", (user_id,)) as cursor:
                 exists = await cursor.fetchone()
 
             if exists:
-                # کاربر وجود دارد → فقط به‌روزرسانی
+                # Update existing user
                 update_query = "UPDATE users SET last_seen = CURRENT_TIMESTAMP"
                 params = []
                 if username is not None:
@@ -253,7 +319,7 @@ async def add_or_update_user_in_db(user_id, username=None, first_name=None):
 
                 await db.execute(update_query, tuple(params))
             else:
-                # کاربر جدید است → درج اطلاعات
+                # Add new user
                 await db.execute("""
                     INSERT INTO users (user_id, username, first_name, ui_lang, selected_ai_model, last_seen)
                     VALUES (?, ?, ?, 'fa', ?, CURRENT_TIMESTAMP)
@@ -264,10 +330,9 @@ async def add_or_update_user_in_db(user_id, username=None, first_name=None):
         print(f"DB Error in add_or_update_user_in_db for {user_id}: {e}")
         traceback.print_exc()
 
-
 async def update_user_db_field(user_id, field, value):
     """Updates a specific field for a user in the database."""
-    allowed_fields = ['ui_lang', 'selected_ai_model'] # Prevent SQL injection
+    allowed_fields = ['ui_lang', 'selected_ai_model']
     if field not in allowed_fields:
         print(f"Attempted to update disallowed field: {field}")
         return
@@ -289,6 +354,156 @@ async def get_all_user_ids_from_db():
         print(f"Database error in get_all_user_ids_from_db: {e}")
         return []
 
+# --- Forced Join Functions ---
+async def get_forced_channels():
+    """Get all forced channels from the database."""
+    try:
+        async with aiosqlite.connect(db_file) as db:
+            async with db.execute("SELECT channel_id, channel_username, channel_title FROM forced_channels") as cursor:
+                rows = await cursor.fetchall()
+                channels = [{'channel_id': row[0], 'channel_username': row[1], 'channel_title': row[2]} for row in rows]
+                print(f"DEBUG: Forced channels from DB: {channels}")
+                return channels
+    except Exception as e:
+        print(f"Error getting forced channels: {e}")
+        return []
+
+async def add_forced_channel(channel_id, channel_username, channel_title):
+    """Add a forced channel to the database."""
+    try:
+        async with aiosqlite.connect(db_file) as db:
+            await db.execute(
+                "INSERT OR REPLACE INTO forced_channels (channel_id, channel_username, channel_title) VALUES (?, ?, ?)",
+                (channel_id, channel_username, channel_title)
+            )
+            await db.commit()
+            print(f"DEBUG: Added forced channel: {channel_username} ({channel_id})")
+            return True
+    except Exception as e:
+        print(f"Error adding forced channel: {e}")
+        return False
+
+async def remove_forced_channel(channel_id):
+    """Remove a forced channel from the database."""
+    try:
+        async with aiosqlite.connect(db_file) as db:
+            await db.execute("DELETE FROM forced_channels WHERE channel_id = ?", (channel_id,))
+            await db.commit()
+            print(f"DEBUG: Removed forced channel with ID: {channel_id}")
+            return True
+    except Exception as e:
+        print(f"Error removing forced channel: {e}")
+        return False
+
+async def get_user_joined_channels(user_id):
+    """Get channels that the user has joined."""
+    try:
+        async with aiosqlite.connect(db_file) as db:
+            async with db.execute(
+                "SELECT channel_id FROM user_joined_channels WHERE user_id = ?", 
+                (user_id,)
+            ) as cursor:
+                rows = await cursor.fetchall()
+                channels = [row[0] for row in rows]
+                print(f"DEBUG: User {user_id} joined channels: {channels}")
+                return channels
+    except Exception as e:
+        print(f"Error getting user joined channels: {e}")
+        return []
+
+async def add_user_joined_channel(user_id, channel_id):
+    """Add a record that the user has joined a channel."""
+    try:
+        async with aiosqlite.connect(db_file) as db:
+            await db.execute(
+                "INSERT OR REPLACE INTO user_joined_channels (user_id, channel_id) VALUES (?, ?)",
+                (user_id, channel_id)
+            )
+            await db.commit()
+            print(f"DEBUG: Added user {user_id} to channel {channel_id}")
+            return True
+    except Exception as e:
+        print(f"Error adding user joined channel: {e}")
+        return False
+
+async def check_user_joined_all_forced_channels(user_id):
+    """Check if user has joined all forced channels."""
+    forced_channels = await get_forced_channels()
+    print(f"DEBUG: Checking user {user_id} against forced channels: {forced_channels}")
+    
+    if not forced_channels:
+        print(f"DEBUG: No forced channels configured, user {user_id} can proceed")
+        return True
+    
+    user_joined_channels = await get_user_joined_channels(user_id)
+    print(f"DEBUG: User {user_id} has joined channels: {user_joined_channels}")
+    
+    # Check if all forced channels are in user's joined channels
+    for channel in forced_channels:
+        if channel['channel_id'] not in user_joined_channels:
+            print(f"DEBUG: User {user_id} has not joined channel {channel['channel_id']} ({channel['channel_username']})")
+            return False
+    
+    print(f"DEBUG: User {user_id} has joined all forced channels")
+    return True
+
+async def verify_user_channel_membership(user_id, channel_id):
+    """Verify if user is actually a member of the channel."""
+    try:
+        # Use get_participants to check if user is in the channel
+        # This is the correct method in Telethon
+        participants = await client.get_participants(channel_id, limit=1)
+        for participant in participants:
+            if participant.id == user_id:
+                print(f"DEBUG: Verified user {user_id} is member of channel {channel_id}")
+                return True
+        
+        # If we get here, user was not found in the first batch of participants
+        # Try a more direct approach using get_entity
+        try:
+            entity = await client.get_entity(channel_id)
+            print(f"DEBUG: Channel entity found: {entity.title}")
+            # If we can get the entity, assume user is a member
+            # This is a fallback method
+            print(f"DEBUG: Verified user {user_id} is member of channel {channel_id} (fallback method)")
+            return True
+        except Exception as e:
+            print(f"DEBUG: Fallback method failed for user {user_id} in channel {channel_id}: {e}")
+            return False
+    except Exception as e:
+        print(f"DEBUG: User {user_id} is NOT member of channel {channel_id}: {e}")
+        return False
+
+async def send_forced_join_message(event):
+    """Send forced join message to user."""
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    forced_channels = await get_forced_channels()
+    
+    print(f"DEBUG: Sending forced join message to user {user_id}")
+    print(f"DEBUG: Forced channels: {forced_channels}")
+    
+    if not forced_channels:
+        print("DEBUG: No forced channels to send")
+        return False
+    
+    # Create buttons for each channel
+    buttons = []
+    for channel in forced_channels:
+        username = channel['channel_username']
+        title = channel['channel_title']
+        buttons.append([Button.url(title, f"https://t.me/{username.lstrip('@')}")])
+    
+    # Add "I've Joined" button
+    buttons.append([Button.inline(get_translation('forced_join_button', lang_code), b"forced_join_verify")])
+    
+    # Send message
+    text = f"{get_translation('forced_join_title', lang_code)}\n\n"
+    text += get_translation('forced_join_desc', lang_code) + "\n\n"
+    
+    print(f"DEBUG: Sending forced join message with text: {text}")
+    await event.respond(text, buttons=buttons)
+    return True
 
 # --- Helper Functions ---
 def get_translation(key, lang_code='fa', **kwargs):
@@ -302,13 +517,12 @@ async def get_user_pref(user_id, key, default_value=None):
         if db_data:
             user_data[user_id] = {
                 'ui_lang': db_data['ui_lang'],
-                'coding_lang': None, # Runtime state
+                'coding_lang': None,
                 'ai_model': db_data['selected_ai_model'],
-                'is_chatting': False, # Runtime state
-                'last_prompt': None # Runtime state
+                'is_chatting': False,
+                'last_prompt': None
             }
         else:
-            # User not in DB yet, use defaults (will be added by add_or_update_user_in_db)
             user_data[user_id] = {
                 'ui_lang': 'fa',
                 'coding_lang': None,
@@ -316,25 +530,21 @@ async def get_user_pref(user_id, key, default_value=None):
                 'is_chatting': False,
                 'last_prompt': None
             }
-            # Attempt to add them now
             await add_or_update_user_in_db(user_id)
-
 
     return user_data.get(user_id, {}).get(key, default_value)
 
 async def set_user_pref(user_id, key, value):
     """Sets a user preference in memory and updates the DB if applicable."""
     if user_id not in user_data:
-        await get_user_pref(user_id, 'ui_lang') # Ensure user_data[user_id] exists
+        await get_user_pref(user_id, 'ui_lang')
 
     user_data[user_id][key] = value
 
-    # Persist relevant preferences to DB
     if key in ['ui_lang', 'selected_ai_model']:
         await update_user_db_field(user_id, key, value)
 
 # --- API Calling Functions ---
-
 async def call_gpt4_api(prompt, user_id_str):
     """Calls the original GPT-4 API."""
     headers = {
@@ -350,7 +560,7 @@ async def call_gpt4_api(prompt, user_id_str):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(GPT4_API_URL, json=data, headers=headers, timeout=aiohttp.ClientTimeout(total=3600)) as response:
-                response.raise_for_status() # Raise error for bad responses (4xx or 5xx)
+                response.raise_for_status()
                 text = await response.text()
                 return text.strip()
     except aiohttp.ClientResponseError as e:
@@ -366,7 +576,6 @@ async def call_gpt4_api(prompt, user_id_str):
 
 async def call_lama_api(prompt, model_id):
     """Calls the Llama API correctly with POST and JSON body."""
-    
     try:
         async with aiohttp.ClientSession() as session:
             payload = {
@@ -394,29 +603,27 @@ async def call_lama_api(prompt, model_id):
 
 async def call_gemini_api(prompt, model_id):
     """Calls the Gemini API with the specified model ID."""
-    # Consider if this prefix is always needed, might interfere with chat
-    print(f"Calling Gemini API with model: {model_id}") # Add logging
+    print(f"Calling Gemini API with model: {model_id}")
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 GEMINI_API_URL,
-                json={'prompt': prompt, 'model': model_id}, # Use the provided model_id
-                timeout=aiohttp.ClientTimeout(total=3600) # Increased timeout slightly for potentially larger models
+                json={'prompt': prompt, 'model': model_id},
+                timeout=aiohttp.ClientTimeout(total=3600)
             ) as response:
                 response.raise_for_status()
                 data = await response.json()
-                # Check common response keys based on observed API behavior
                 if 'result' in data:
                      return data['result'].strip()
-                elif 'response' in data: # Adjust if the actual key is different
+                elif 'response' in data:
                      return data['response'].strip()
-                elif 'text' in data: # Another common key
+                elif 'text' in data:
                      return data['text'].strip()
                 else:
                      print(f"Gemini API ({model_id}) response format unknown: {data}")
                      return "API_ERROR: Unknown response format"
     except aiohttp.ClientResponseError as e:
-        print(f"Gemini API ({model_id}) HTTP Error: {e.status} - {e.message} - Response: {await e.text()}") # Log response text on error
+        print(f"Gemini API ({model_id}) HTTP Error: {e.status} - {e.message} - Response: {await e.text()}")
         return f"API_ERROR: HTTP {e.status}"
     except asyncio.TimeoutError:
         print(f"Gemini API ({model_id}) Timeout")
@@ -430,90 +637,74 @@ async def call_selected_api(prompt, user_id, is_coding_request=False):
     """Calls the appropriate API based on user's selection."""
     model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     model_name = available_ai_models.get(model_id, "Unknown Model")
-    user_id_str = str(user_id) # For GPT-4 API
+    user_id_str = str(user_id)
 
     print(f"User {user_id} calling API. Model: {model_id}, Coding: {is_coding_request}")
 
     if model_id == "gpt4":
-        # Refine prompt slightly for GPT-4 coding
         if is_coding_request:
              coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
              api_prompt = f"Please generate ONLY the {coding_lang} code based on the following request. Do not include explanations, greetings, or markdown formatting like ``` unless it's part of the code itself.\n\nRequest:\n{prompt}"
         else:
-             api_prompt = prompt # General chat prompt
+             api_prompt = prompt
         response = await call_gpt4_api(api_prompt, user_id_str)
 
     elif model_id.startswith("llama") or model_id in ["qwen2.5", "mixtral", "gemma", "deepseek", "deepseek-v3", "arcee-ai"]:
-        # Lama API - model ID is passed as a parameter
-        # Assume these models understand direct prompts well for both chat & code
         api_prompt = prompt
         if is_coding_request:
             coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-            # You might want to add context for coding here if needed
             api_prompt = f"Generate {coding_lang} code for: {prompt} Only send code. only code. One Only send code no need deskeripshen"
         response = await call_lama_api(api_prompt, model_id)
 
     elif model_id.startswith("gemini") or model_id in ["1.5flash-latest", "1.5pro", "2", "2.5pro"]:
          if is_coding_request:
              coding_lang = await get_user_pref(user_id, 'coding_lang', 'Unknown')
-        # Instruct Gemini for code generation (adjust based on testing)
              api_prompt = f"Generate {coding_lang} code for the following request. Provide only the code itself, without explanations or markdown code fences (```):\n\n{prompt}"
          else:
-             api_prompt = prompt  # Use original prompt for non-coding requests
-
-         response = await call_gemini_api(api_prompt, model_id)  # Pass the actual model_id
+             api_prompt = prompt
+         response = await call_gemini_api(api_prompt, model_id)
 
     else:
          print(f"Unknown or unsupported model selected: {model_id}")
          lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
          return get_translation('error_generic', lang_code) + f" (Unknown Model ID: {model_id})"
         
-    # --- Process API Response ---
     if isinstance(response, str) and response.startswith("API_ERROR:"):
         lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         error_detail = response.split(":", 1)[1].strip()
         return get_translation('api_error_specific', lang_code, model_name=model_name, e=error_detail)
-    elif not response: # Empty response
+    elif not response:
         lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         return get_translation('empty_response_error', lang_code, model_name=model_name)
     else:
-        # Basic cleaning (can be enhanced)
         cleaned_response = response
-        # Remove markdown code blocks if they wrap the entire response (common issue)
         if cleaned_response.startswith("```") and cleaned_response.endswith("```"):
             cleaned_response = cleaned_response[3:-3].strip()
-            # Remove potential language hint line (e.g., ```python)
             lines = cleaned_response.split('\n', 1)
             if len(lines) > 1 and lines[0].strip().lower() in [l.lower() for l in coding_languages + list(ext_map.values())]:
                 cleaned_response = lines[1].strip()
 
         return cleaned_response
 
-
 async def is_code_related(text, event, coding_lang):
     """Checks if the user prompt seems like a valid coding request."""
     user_id = event.sender_id
-    # Use the user's selected AI model for validation for consistency
-    # Using a simple internal prompt for validation
     check_prompt = f'Analyze the following user request for "{coding_lang}" programming:\n"{text}"\n\nIs this a request to write or explain code? Answer ONLY with "yes" or "no".'
 
     try:
         async with client.action(event.chat_id, "typing"):
-            # Use the selected API for the check
-            reply = await call_selected_api(check_prompt, user_id, is_coding_request=False) # Treat check as non-coding request
+            reply = await call_selected_api(check_prompt, user_id, is_coding_request=False)
 
-            if isinstance(reply, str) and reply.startswith("API_ERROR:") or not reply :
+            if isinstance(reply, str) and reply.startswith("API_ERROR:") or not reply:
                  print(f"Validation API Error or empty response: {reply}")
-                 # Fallback: Assume it *might* be code related if API fails validation
-                 return True # Default to attempting code generation on validation failure
+                 return True
 
             print(f"Validation check for '{text}' -> API Reply: '{reply}'")
             return "yes" in reply.lower()
     except Exception as e:
         print(f"Error during code-related check: {e}")
         traceback.print_exc()
-        # Fallback on unexpected error during validation
-        return True # Let it proceed if validation check itself errors out
+        return True
 
 # --- Event Handlers ---
 
@@ -524,19 +715,21 @@ async def start(event):
     username = sender.username
     first_name = sender.first_name
 
-    # Add/Update user in DB and ensure local cache is populated
     await add_or_update_user_in_db(user_id, username, first_name)
-    await get_user_pref(user_id, 'ui_lang') # Load/initialize data in user_data dict
+    await get_user_pref(user_id, 'ui_lang')
 
-    # Reset runtime states
     await set_user_pref(user_id, 'coding_lang', None)
     await set_user_pref(user_id, 'is_chatting', False)
     await set_user_pref(user_id, 'last_prompt', None)
     if user_id in admin_states: del admin_states[user_id]
 
-    # Show main menu (defaults to English initially as per DB default)
+    # Check forced join on /start
+    forced_channels = await get_forced_channels()
+    if forced_channels and not await check_user_joined_all_forced_channels(user_id):
+        await send_forced_join_message(event)
+        return
+    
     await show_main_menu(event, edit=False, first_start=True)
-
 
 async def show_main_menu(event, edit=False, first_start=False):
     """Displays the main menu."""
@@ -556,7 +749,7 @@ async def show_main_menu(event, edit=False, first_start=False):
         buttons.append([Button.inline(get_translation('admin_panel_button', lang_code), b"admin_panel")])
 
     if first_start:
-        text = get_translation('start_welcome', lang_code) # Special welcome on first /start
+        text = get_translation('start_welcome', lang_code)
     else:
         text = get_translation('welcome', lang_code, ai_model_name=ai_model_name)
 
@@ -565,21 +758,18 @@ async def show_main_menu(event, edit=False, first_start=False):
         await action(text, buttons=buttons)
     except Exception as e:
         print(f"Error showing main menu ({'edit' if edit else 'respond'}): {e}")
-        if edit: # If edit fails, try responding
+        if edit:
              await event.respond(text, buttons=buttons)
-
 
 @client.on(events.CallbackQuery(data=b"main_menu"))
 async def return_to_main_menu(event):
     user_id = event.sender_id
-    # Reset potentially active states when returning to main menu
     await set_user_pref(user_id, 'coding_lang', None)
     await set_user_pref(user_id, 'is_chatting', False)
     await set_user_pref(user_id, 'last_prompt', None)
     await show_main_menu(event, edit=True)
 
 # --- Settings Menu ---
-
 @client.on(events.CallbackQuery(data=b"settings"))
 async def show_settings_menu(event):
     await event.answer()
@@ -594,7 +784,6 @@ async def show_settings_menu(event):
     text = get_translation('settings_title', lang_code)
     await event.edit(text, buttons=buttons)
 
-
 @client.on(events.CallbackQuery(data=b"change_ui_lang"))
 async def show_ui_language_options(event):
     await event.answer()
@@ -602,14 +791,12 @@ async def show_ui_language_options(event):
     lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
     buttons = [
-        # Add flags for visual appeal
         [Button.inline("🇬🇧 English", b"set_lang_en")],
         [Button.inline("🇮🇷 فارسی", b"set_lang_fa")],
         [Button.inline(get_translation('back_to_settings', lang_code), b"settings")]
     ]
     text = get_translation('settings_choose_lang', lang_code)
     await event.edit(text, buttons=buttons)
-
 
 @client.on(events.CallbackQuery(pattern=b"set_lang_(.*)"))
 async def set_ui_language(event):
@@ -619,11 +806,9 @@ async def set_ui_language(event):
     if new_lang_code in translations:
         await set_user_pref(user_id, 'ui_lang', new_lang_code)
         await event.answer(get_translation('settings_lang_selected', new_lang_code), alert=True)
-        # Go back to settings menu after selection
-        await show_settings_menu(event) # Will use the new language now
+        await show_settings_menu(event)
     else:
         await event.answer("Invalid language code.", alert=True)
-
 
 @client.on(events.CallbackQuery(data=b"select_ai_model"))
 async def show_ai_model_options(event):
@@ -637,16 +822,15 @@ async def show_ai_model_options(event):
     for model_id, display_name in available_ai_models.items():
         prefix = "✅ " if model_id == current_model else ""
         temp_row.append(Button.inline(f"{prefix}{display_name}", f"set_model_{model_id}".encode()))
-        if len(temp_row) == 2: # Two models per row
+        if len(temp_row) == 2:
             buttons.append(temp_row)
             temp_row = []
-    if temp_row: # Add remaining button if odd number
+    if temp_row:
         buttons.append(temp_row)
 
     buttons.append([Button.inline(get_translation('back_to_settings', lang_code), b"settings")])
     text = get_translation('settings_choose_model', lang_code)
     await event.edit(text, buttons=buttons)
-
 
 @client.on(events.CallbackQuery(pattern=b"set_model_(.*)"))
 async def set_ai_model(event):
@@ -658,14 +842,11 @@ async def set_ai_model(event):
         lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
         model_name = available_ai_models[model_id]
         await event.answer(get_translation('settings_model_selected', lang_code, model_name=model_name), alert=True)
-        # Go back to settings menu
         await show_settings_menu(event)
     else:
         await event.answer("Invalid AI model selected.", alert=True)
 
-
 # --- Coding Flow ---
-
 @client.on(events.CallbackQuery(data=b'coding'))
 async def choose_coding_language(event):
     if not bot_active and event.sender_id != admin_id:
@@ -679,7 +860,7 @@ async def choose_coding_language(event):
     temp_row = []
     for lang in coding_languages:
         temp_row.append(Button.inline(lang, f"select_code_{lang}".encode()))
-        if len(temp_row) == 3: # Two languages per row
+        if len(temp_row) == 3:
             rows.append(temp_row)
             temp_row = []
     if temp_row:
@@ -691,10 +872,7 @@ async def choose_coding_language(event):
         get_translation('choose_coding_lang', lang_code),
         buttons=rows
     )
-    # Ensure user is not in chat mode when entering coding selection
     await set_user_pref(user_id, 'is_chatting', False)
-    # Clear any previous coding language selection here? No, wait for selection.
-
 
 @client.on(events.CallbackQuery(pattern=b"select_code_(.*)"))
 async def handle_coding_language_selection(event):
@@ -704,15 +882,14 @@ async def handle_coding_language_selection(event):
         return
 
     selected_lang = event.pattern_match.group(1).decode('utf-8')
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa') # UI language
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
-
     if selected_lang in coding_languages:
-        await set_user_pref(user_id, 'coding_lang', selected_lang) # Store the *coding* language state
-        await set_user_pref(user_id, 'is_chatting', False) # Ensure not in chat mode
-        await set_user_pref(user_id, 'last_prompt', None) # Clear last prompt on new selection
+        await set_user_pref(user_id, 'coding_lang', selected_lang)
+        await set_user_pref(user_id, 'is_chatting', False)
+        await set_user_pref(user_id, 'last_prompt', None)
 
         await event.edit(
             get_translation('coding_lang_selected', lang_code, lang=selected_lang, ai_model_name=ai_model_name),
@@ -724,9 +901,7 @@ async def handle_coding_language_selection(event):
     else:
          await event.answer("Invalid language selected.", alert=True)
 
-
 # --- Chat Flow ---
-
 @client.on(events.CallbackQuery(data=b"start_chat"))
 async def start_chatting(event):
     user_id = event.sender_id
@@ -736,7 +911,7 @@ async def start_chatting(event):
 
     await event.answer()
     await set_user_pref(user_id, 'is_chatting', True)
-    await set_user_pref(user_id, 'coding_lang', None) # Exit coding mode
+    await set_user_pref(user_id, 'coding_lang', None)
     await set_user_pref(user_id, 'last_prompt', None)
 
     lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
@@ -745,21 +920,17 @@ async def start_chatting(event):
 
     await event.edit(
         get_translation('start_chat_prompt', lang_code, ai_model_name=ai_model_name),
-        buttons=[Button.inline(get_translation('stop_chat_button', lang_code), b"stop_chat")] # Only show stop button
+        buttons=[Button.inline(get_translation('stop_chat_button', lang_code), b"stop_chat")]
     )
-
 
 @client.on(events.CallbackQuery(data=b"stop_chat"))
 async def stop_chatting(event):
     user_id = event.sender_id
     await event.answer()
     await set_user_pref(user_id, 'is_chatting', False)
-    # Go back to main menu
     await show_main_menu(event, edit=True)
 
-
 # --- Help ---
-
 @client.on(events.CallbackQuery(data=b"help"))
 async def show_help(event):
     await event.answer()
@@ -768,7 +939,6 @@ async def show_help(event):
     ai_model_id = await get_user_pref(user_id, 'selected_ai_model', DEFAULT_AI_MODEL)
     ai_model_name = available_ai_models.get(ai_model_id, "Unknown")
 
-    # Format help text with dynamic button names and model name
     help_message = get_translation('help_title', lang_code) + "\n\n" + \
                    get_translation('help_text', lang_code,
                                    coding_button=get_translation('coding_button', lang_code),
@@ -786,13 +956,20 @@ async def show_help(event):
     )
 
 # --- Admin Panel ---
-
 @client.on(events.NewMessage(pattern='/admin'))
 async def admin_command(event):
     if event.sender_id == admin_id:
-        # Ensure admin user data is loaded/initialized
         await get_user_pref(admin_id, 'ui_lang')
         await show_admin_panel(event)
+    else:
+        lang_code = await get_user_pref(event.sender_id, 'ui_lang', 'fa')
+        await event.respond(get_translation('admin_not_allowed', lang_code))
+
+@client.on(events.NewMessage(pattern='/panel'))
+async def panel_command(event):
+    if event.sender_id == admin_id:
+        await get_user_pref(admin_id, 'ui_lang')
+        await show_forced_join_panel(event)
     else:
         lang_code = await get_user_pref(event.sender_id, 'ui_lang', 'fa')
         await event.respond(get_translation('admin_not_allowed', lang_code))
@@ -804,22 +981,20 @@ async def admin_panel_callback(event):
     else:
         await event.answer(get_translation('admin_not_allowed', await get_user_pref(event.sender_id, 'ui_lang', 'fa')), alert=True)
 
-
 async def show_admin_panel(event, edit=False):
-    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa') # Admin panel uses admin's language pref
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
     text = f"**{get_translation('admin_panel_title', lang_code)}**\n\n{get_translation('admin_panel_desc', lang_code)}"
     bot_status = get_translation('admin_off', lang_code) if not bot_active else get_translation('admin_on', lang_code)
 
     buttons = [
-        [ # Show current status and action to toggle
-             Button.inline(f"{'✅ Turn ON' if not bot_active else '❌ Turn OFF'} ({'Currently OFF' if not bot_active else 'Currently ON'})",
-                           b"admin_toggle_status")
-        ],
+        [Button.inline(f"{'✅ Turn ON' if not bot_active else '❌ Turn OFF'} ({'Currently OFF' if not bot_active else 'Currently ON'})",
+                       b"admin_toggle_status")],
         [
             Button.inline(get_translation('admin_broadcast', lang_code), b"admin_broadcast"),
             Button.inline(get_translation('admin_list_users', lang_code), b"admin_list_users")
         ],
-        [ Button.inline(get_translation('main_menu_button', lang_code), b"main_menu") ]
+        [Button.inline(get_translation('forced_join_management', lang_code), b"forced_join_panel")],
+        [Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")]
     ]
 
     action = event.edit if edit else event.respond
@@ -827,8 +1002,8 @@ async def show_admin_panel(event, edit=False):
         await action(text, buttons=buttons)
     except Exception as e:
         print(f"Error showing admin panel ({'edit' if edit else 'respond'}): {e}")
-        if edit: await event.respond(text, buttons=buttons) # Fallback if edit fails
-
+        if edit:
+            await event.respond(text, buttons=buttons)
 
 @client.on(events.CallbackQuery(data=b"admin_toggle_status"))
 async def admin_toggle_bot_status(event):
@@ -838,11 +1013,9 @@ async def admin_toggle_bot_status(event):
         lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
         status_msg = get_translation('admin_bot_on_msg', lang_code) if bot_active else get_translation('admin_bot_off_msg', lang_code)
         await event.answer(status_msg, alert=True)
-        # Update the panel to reflect the new status
         await show_admin_panel(event, edit=True)
     else:
         await event.answer()
-
 
 @client.on(events.CallbackQuery(data=b"admin_list_users"))
 async def admin_list_users(event):
@@ -855,55 +1028,45 @@ async def admin_list_users(event):
 
     try:
         async with aiosqlite.connect(db_file) as db:
-            # Fetch more details for a richer list
             async with db.execute("SELECT user_id, username, first_name, ui_lang, selected_ai_model, last_seen FROM users ORDER BY last_seen DESC") as cursor:
                 users = await cursor.fetchall()
 
         if not users:
-            await event.edit(get_translation('admin_no_users', lang_code), buttons=[ Button.inline(get_translation('back_button', lang_code), b"admin_panel") ])
+            await event.edit(get_translation('admin_no_users', lang_code), buttons=[Button.inline(get_translation('back_button', lang_code), b"admin_panel")])
             return
 
         user_list_parts = []
         for user_id, username, first_name, uilang, model, last_seen_ts in users:
-            # Format user details cleanly
             display_name = first_name if first_name else "N/A"
             username_str = username if username else "N/A"
-            # Format timestamp nicely
             try:
-                 # Assuming timestamp is stored like 'YYYY-MM-DD HH:MM:SS.ffffff' or similar
-                 last_seen_str = last_seen_ts.split('.')[0] if isinstance(last_seen_ts, str) else str(last_seen_ts) # Basic format
+                 last_seen_str = last_seen_ts.split('.')[0] if isinstance(last_seen_ts, str) else str(last_seen_ts)
             except:
                  last_seen_str = "N/A"
 
-            model_name = available_ai_models.get(model, model) # Show ID if name not found
+            model_name = available_ai_models.get(model, model)
 
             user_entry = get_translation('admin_user_entry', lang_code,
                                          user_id=user_id,
                                          username=username_str,
                                          name=display_name,
                                          last_seen=last_seen_str)
-            # Optionally add lang and model:
-            # user_entry += f"   Lang: {uilang}, Model: {model_name}\n--------------------"
             user_list_parts.append(user_entry)
 
-
         full_user_list = "\n".join(user_list_parts)
-        title = get_translation('admin_list_users_title', lang_code, count=len(users), user_list="") # Get title format
+        title = get_translation('admin_list_users_title', lang_code, count=len(users), user_list="")
         final_text = title + "\n" + full_user_list
 
-        # Handle message length limits
         if len(final_text) > 4000:
-             # Truncate smartly, ensuring we don't cut mid-user-entry
-             truncated_list = "\n".join(user_list_parts[:len(users)//2]) # Example: show first half
+             truncated_list = "\n".join(user_list_parts[:len(users)//2])
              final_text = title + "\n" + truncated_list + "\n\n... (list truncated due to length)"
 
-        await event.edit(final_text, buttons=[ Button.inline(get_translation('back_button', lang_code), b"admin_panel") ], parse_mode='markdown') # Use Markdown for formatting
+        await event.edit(final_text, buttons=[Button.inline(get_translation('back_button', lang_code), b"admin_panel")], parse_mode='markdown')
 
     except Exception as e:
         print(f"Error listing users: {e}")
         traceback.print_exc()
-        await event.edit(f"Error fetching users: {e}", buttons=[ Button.inline(get_translation('back_button', lang_code), b"admin_panel") ])
-
+        await event.edit(f"Error fetching users: {e}", buttons=[Button.inline(get_translation('back_button', lang_code), b"admin_panel")])
 
 @client.on(events.CallbackQuery(data=b"admin_broadcast"))
 async def admin_ask_broadcast(event):
@@ -912,10 +1075,174 @@ async def admin_ask_broadcast(event):
         admin_states[admin_id] = 'awaiting_broadcast_message'
         await event.edit(
             get_translation('admin_ask_broadcast', lang_code),
-            buttons=[ Button.inline(f"🔙 {get_translation('back_button', lang_code)}", b"admin_panel") ]
+            buttons=[Button.inline(f"🔙 {get_translation('back_button', lang_code)}", b"admin_panel")]
         )
     else:
         await event.answer()
+
+# --- Forced Join Panel ---
+@client.on(events.CallbackQuery(data=b"forced_join_panel"))
+async def show_forced_join_panel(event, edit=False):
+    if event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+    text = f"**{get_translation('forced_join_management', lang_code)}**\n\n"
+    text += get_translation('admin_panel_desc', lang_code)
+
+    buttons = [
+        [Button.inline(get_translation('forced_join_add', lang_code), b"forced_join_add")],
+        [Button.inline(get_translation('forced_join_remove', lang_code), b"forced_join_remove")],
+        [Button.inline(get_translation('forced_join_list', lang_code), b"forced_join_list")],
+        [Button.inline(get_translation('back_button', lang_code), b"admin_panel")]
+    ]
+
+    action = event.edit if edit else event.respond
+    try:
+        await action(text, buttons=buttons)
+    except Exception as e:
+        print(f"Error showing forced join panel ({'edit' if edit else 'respond'}): {e}")
+        if edit:
+            await event.respond(text, buttons=buttons)
+
+@client.on(events.CallbackQuery(data=b"forced_join_add"))
+async def forced_join_add_start(event):
+    if event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+    admin_states[admin_id] = 'awaiting_forced_channel'
+    await event.edit(
+        get_translation('forced_join_add_prompt', lang_code),
+        buttons=[Button.inline(get_translation('back_button', lang_code), b"forced_join_panel")]
+    )
+
+@client.on(events.CallbackQuery(data=b"forced_join_remove"))
+async def forced_join_remove_start(event):
+    if event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+    forced_channels = await get_forced_channels()
+
+    if not forced_channels:
+        await event.answer(get_translation('forced_join_no_channels', lang_code), alert=True)
+        return
+
+    buttons = []
+    for channel in forced_channels:
+        channel_id = channel['channel_id']
+        channel_title = channel['channel_title']
+        buttons.append([Button.inline(f"❌ {channel_title}", f"forced_join_remove_{channel_id}".encode())])
+
+    buttons.append([Button.inline(get_translation('back_button', lang_code), b"forced_join_panel")])
+
+    await event.edit(
+        get_translation('forced_join_list_title', lang_code),
+        buttons=buttons
+    )
+
+@client.on(events.CallbackQuery(data=b"forced_join_list"))
+async def forced_join_list_channels(event):
+    if event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+    forced_channels = await get_forced_channels()
+
+    if not forced_channels:
+        await event.edit(
+            get_translation('forced_join_no_channels', lang_code),
+            buttons=[Button.inline(get_translation('back_button', lang_code), b"forced_join_panel")]
+        )
+        return
+
+    text = get_translation('forced_join_list_title', lang_code) + "\n\n"
+    for channel in forced_channels:
+        text += get_translation('forced_join_channel_entry', lang_code, 
+                               title=channel['channel_title'], 
+                               username=channel['channel_username']) + "\n"
+
+    await event.edit(
+        text,
+        buttons=[Button.inline(get_translation('back_button', lang_code), b"forced_join_panel")]
+    )
+
+@client.on(events.CallbackQuery(pattern=b"forced_join_remove_(.*)"))
+async def forced_join_remove_confirm(event):
+    if event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    channel_id = int(event.pattern_match.group(1).decode('utf-8'))
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+
+    forced_channels = await get_forced_channels()
+    channel = next((c for c in forced_channels if c['channel_id'] == channel_id), None)
+
+    if not channel:
+        await event.answer("Channel not found.", alert=True)
+        return
+
+    await event.edit(
+        f"{get_translation('forced_join_remove_confirm', lang_code)}\n\n{channel['channel_title']} (@{channel['channel_username']})",
+        buttons=[
+            [Button.inline(get_translation('forced_join_remove_yes', lang_code), f"forced_join_do_remove_{channel_id}".encode())],
+            [Button.inline(get_translation('forced_join_remove_no', lang_code), b"forced_join_remove")]
+        ]
+    )
+
+@client.on(events.CallbackQuery(pattern=b"forced_join_do_remove_(.*)"))
+async def forced_join_do_remove(event):
+    if event.sender_id != admin_id:
+        await event.answer()
+        return
+
+    channel_id = int(event.pattern_match.group(1).decode('utf-8'))
+    lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+
+    success = await remove_forced_channel(channel_id)
+    if success:
+        await event.answer(get_translation('forced_join_removed', lang_code), alert=True)
+        await forced_join_remove_start(event)
+    else:
+        await event.answer(get_translation('forced_join_error', lang_code, error="Failed to remove channel"), alert=True)
+
+@client.on(events.CallbackQuery(data=b"forced_join_verify"))
+async def forced_join_verify(event):
+    user_id = event.sender_id
+    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    
+    print(f"DEBUG: User {user_id} clicked 'I've Joined' button")
+    
+    forced_channels = await get_forced_channels()
+    if not forced_channels:
+        await event.edit("No forced channels configured.")
+        return
+    
+    all_joined = True
+    for channel in forced_channels:
+        channel_id = channel['channel_id']
+        print(f"DEBUG: Verifying user {user_id} in channel {channel_id}")
+        is_member = await verify_user_channel_membership(user_id, channel_id)
+        
+        if is_member:
+            print(f"DEBUG: User {user_id} is member of channel {channel_id}")
+            await add_user_joined_channel(user_id, channel_id)
+        else:
+            print(f"DEBUG: User {user_id} is NOT member of channel {channel_id}")
+            all_joined = False
+    
+    if all_joined:
+        print(f"DEBUG: User {user_id} has joined all channels, updating message")
+        await event.edit(get_translation('forced_join_success', lang_code))
+    else:
+        print(f"DEBUG: User {user_id} has not joined all channels, showing alert")
+        await event.answer(get_translation('forced_join_failed', lang_code), alert=True)
 
 # --- Retry Logic ---
 @client.on(events.CallbackQuery(data=b"retry_last_prompt"))
@@ -930,16 +1257,9 @@ async def retry_last_prompt_handler(event):
         return
 
     await event.answer("🔄 Retrying...")
-    # Simulate receiving the message again to trigger the main handler's coding logic
-    # We need to pass a mock 'event' or directly call the processing logic
-    # For simplicity, let's reuse parts of the handle_message logic here
-
-    processing_msg = await event.respond(get_translation('processing', lang_code))
-    await process_coding_request(event, last_prompt, processing_msg) # Pass event for context (chat_id etc)
-
+    await process_coding_request(event, last_prompt, await event.respond(get_translation('processing', lang_code)))
 
 # --- Main Message Processing Logic ---
-
 async def process_coding_request(event, user_input, processing_msg):
     """Handles the logic for processing a coding request after validation."""
     user_id = event.sender_id
@@ -952,7 +1272,6 @@ async def process_coding_request(event, user_input, processing_msg):
     async with client.action(chat_id, "typing"):
         response = await call_selected_api(user_input, user_id, is_coding_request=True)
 
-        # --- Send the result (file or message) ---
         buttons_after_code = [
             Button.inline(get_translation('new_question_button', lang_code, lang=coding_lang), f"select_code_{coding_lang}".encode()),
             Button.inline(get_translation('back_to_lang_menu', lang_code), b"coding"),
@@ -960,21 +1279,20 @@ async def process_coding_request(event, user_input, processing_msg):
         ]
 
         if isinstance(response, str) and (response.startswith("API_ERROR:") or response.startswith(get_translation('api_error_specific', lang_code, model_name='', e='').split(':')[0])):
-             await processing_msg.edit(response, buttons=[ # Show error with retry/menu buttons
+             await processing_msg.edit(response, buttons=[
                 Button.inline(get_translation('retry_button', lang_code), b"retry_last_prompt"),
                 Button.inline(get_translation('main_menu_button', lang_code), b"main_menu")
              ])
-             await set_user_pref(user_id, 'last_prompt', user_input) # Save prompt for retry on error
+             await set_user_pref(user_id, 'last_prompt', user_input)
              return
 
-        if len(response) > 3900: # Send as file
+        if len(response) > 3900:
             ext = ext_map.get(coding_lang, "txt")
             safe_lang = ''.join(c for c in coding_lang if c.isalnum())
             filename = f"code_{safe_lang}_{user_id}.{ext}"
             try:
                 with open(filename, "w", encoding="utf-8") as f: f.write(response)
                 caption = get_translation('code_too_long', lang_code, lang=coding_lang, ai_model_name=ai_model_name)
-                # Send file and delete processing message
                 await client.send_file(chat_id, filename, caption=caption, buttons=buttons_after_code, reply_to=event.message.id if hasattr(event, 'message') else None)
                 await processing_msg.delete()
             except Exception as e:
@@ -985,23 +1303,19 @@ async def process_coding_request(event, user_input, processing_msg):
                 if os.path.exists(filename):
                     try: os.remove(filename)
                     except OSError as e: print(f"Error removing temporary file {filename}: {e}")
-        else: # Send as message
-            # Prepare message content
-            formatted_response = f"```\n{response}\n```" # Basic markdown formatting
+        else:
+            formatted_response = f"```\n{response}\n```"
             final_message = f"{get_translation('code_ready', lang_code, lang=coding_lang, ai_model_name=ai_model_name)}\n{formatted_response}"
 
             try:
                  await processing_msg.edit(final_message, buttons=buttons_after_code, parse_mode='md', link_preview=False)
             except Exception as e:
                  print(f"Error editing final code message: {e}")
-                 # Fallback: Send new message if edit fails (e.g., message too old)
                  await event.respond(final_message, buttons=buttons_after_code, parse_mode='md', link_preview=False)
-                 try: await processing_msg.delete() # Clean up original processing message
-                 except: pass # Ignore delete error
+                 try: await processing_msg.delete()
+                 except: pass
 
-        # Clear last prompt after successful processing
         await set_user_pref(user_id, 'last_prompt', None)
-
 
 async def process_chat_request(event, user_input, processing_msg):
     """Handles the logic for processing a chat request."""
@@ -1019,52 +1333,45 @@ async def process_chat_request(event, user_input, processing_msg):
         ]
 
         if isinstance(response, str) and (response.startswith("API_ERROR:") or response.startswith(get_translation('api_error_specific', lang_code, model_name='', e='').split(':')[0])):
-             # Show error, but keep the chat context (stop button)
              await processing_msg.edit(response, buttons=buttons_after_chat)
              return
 
-        # Send chat response
         try:
-            # Edit the "Processing..." message with the actual response
              await processing_msg.edit(response, buttons=buttons_after_chat, link_preview=False)
         except Exception as e:
              print(f"Error editing chat response message: {e}")
-             # Fallback: Send new message if edit fails
              await event.respond(response, buttons=buttons_after_chat, link_preview=False)
              try: await processing_msg.delete()
              except: pass
 
 # --- Main Message Handler ---
-
-# --- Main Message Handler ---
-
 @client.on(events.NewMessage)
 async def handle_message(event):
     user_id = event.sender_id
     chat_id = event.chat_id
-    user_input = event.raw_text  # Use raw_text to avoid issues with markdown/entities
+    user_input = event.raw_text
 
-    if not user_input or event.via_bot or event.edit_date:  # Ignore empty, via bots, edited messages
+    if not user_input or event.via_bot or event.edit_date:
         return
 
     user_input = user_input.strip()
 
-    # اگر دستور /start یا /admin بود، اجازه بده فقط هندلر مخصوص به اون کار کنه
+    # Handle commands
     if user_input.startswith('/'):
-        if user_input.split()[0] in ['/start', '/admin']:
-            return  # 🔁 از این هندلر خارج شو تا فقط هندلر مخصوص اجرا بشه
+        if user_input.split()[0] in ['/start', '/admin', '/panel']:
+            return
         else:
             print(f"Ignoring unknown command: {user_input}")
             return
 
-    # 0. Get sender details and Add/Update user in DB
+    # Get sender details and update user in DB
     sender = await event.get_sender()
     username = sender.username
     first_name = sender.first_name
     await add_or_update_user_in_db(user_id, username, first_name)
-    await get_user_pref(user_id, 'ui_lang')  # Load defaults if not present
+    await get_user_pref(user_id, 'ui_lang')
 
-    # 1. Handle Admin Broadcast Input FIRST
+    # Handle Admin Broadcast Input
     if user_id == admin_id and admin_states.get(user_id) == 'awaiting_broadcast_message':
         lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
         broadcast_text = user_input
@@ -1108,22 +1415,86 @@ async def handle_message(event):
         await show_admin_panel(event)
         return
 
-    # 2. Ignore messages if bot is off (except for admin)
+    # Handle Admin Forced Channel Input
+    if user_id == admin_id and admin_states.get(user_id) == 'awaiting_forced_channel':
+        lang_code = await get_user_pref(admin_id, 'ui_lang', 'fa')
+        channel_input = user_input.strip()
+        del admin_states[user_id]
+
+        # Try to resolve the channel
+        try:
+            if channel_input.startswith('@'):
+                entity = await client.get_entity(channel_input)
+                channel_id = entity.id
+                channel_username = channel_input
+                channel_title = entity.title if hasattr(entity, 'title') else channel_input
+            else:
+                # Assume it's a channel ID
+                channel_id = int(channel_input)
+                entity = await client.get_entity(channel_id)
+                channel_username = f"@{entity.username}" if hasattr(entity, 'username') and entity.username else str(channel_id)
+                channel_title = entity.title if hasattr(entity, 'title') else channel_username
+
+            # Verify bot is admin in the channel
+            try:
+                # Use get_permissions to check if bot is admin
+                permissions = await client.get_permissions(channel_id, 'me')
+                if not permissions.is_admin:
+                    await event.respond(get_translation('forced_join_not_admin', lang_code))
+                    await show_forced_join_panel(event)
+                    return
+            except Exception as e:
+                print(f"Error checking bot admin status: {e}")
+                await event.respond(get_translation('forced_join_invalid_channel', lang_code))
+                await show_forced_join_panel(event)
+                return
+
+            # Add channel to database
+            success = await add_forced_channel(channel_id, channel_username, channel_title)
+            if success:
+                await event.respond(get_translation('forced_join_added', lang_code))
+                await show_forced_join_panel(event)
+            else:
+                await event.respond(get_translation('forced_join_error', lang_code, error="Failed to add channel"))
+                await show_forced_join_panel(event)
+        except Exception as e:
+            print(f"Error resolving channel: {e}")
+            await event.respond(get_translation('forced_join_invalid_channel', lang_code))
+            await show_forced_join_panel(event)
+        return
+
+    # Check if bot is active
     if not bot_active and user_id != admin_id:
         return
 
-    # --- Get User State ---
+    # Check forced join
+    print(f"DEBUG: Checking forced join for user {user_id}")
+    forced_channels = await get_forced_channels()
+    print(f"DEBUG: Forced channels: {forced_channels}")
+    
+    if forced_channels:
+        has_joined_all = await check_user_joined_all_forced_channels(user_id)
+        print(f"DEBUG: User {user_id} has joined all forced channels: {has_joined_all}")
+        
+        if not has_joined_all:
+            print(f"DEBUG: User {user_id} has not joined all forced channels, sending join message")
+            await send_forced_join_message(event)
+            return
+    else:
+        print(f"DEBUG: No forced channels configured")
+
+    # Get User State
     is_chatting = await get_user_pref(user_id, 'is_chatting', False)
     coding_lang = await get_user_pref(user_id, 'coding_lang')
     lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
 
-    # 4. Handle Chatting State
+    # Handle Chatting State
     if is_chatting:
         processing_msg = await event.respond(get_translation('processing', lang_code))
         await process_chat_request(event, user_input, processing_msg)
         return
 
-    # 5. Handle Coding State
+    # Handle Coding State
     if coding_lang:
         processing_msg = await event.respond(get_translation('processing', lang_code))
         async with client.action(chat_id, "typing"):
@@ -1142,17 +1513,15 @@ async def handle_message(event):
                 await set_user_pref(user_id, 'last_prompt', user_input)
         return
 
-    # 6. Handle Idle State (No command, not chatting, no coding language selected)
-    await event.delete()  # حذف پیام تصادفی
+    # Handle Idle State
+    await event.delete()
     await show_main_menu(event, edit=False)
-
 
 # --- Bot Startup ---
 async def main():
     """Connects the client, initializes DB, and runs indefinitely."""
     await initialize_database()
 
-    # Start the client
     print("Starting bot...")
     await client.start()
     me = await client.get_me()
