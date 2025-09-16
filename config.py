@@ -12,7 +12,7 @@ GEMINI_API_URL = "https://gem-ehsan.vercel.app/gemini/chat"
 # Default Settings
 DEFAULT_AI_MODEL = "gpt4"
 DEFAULT_LANGUAGE = "fa"
-DEFAULT_ADMIN_ID = 7094106651
+DEFAULT_ADMIN_ID = 1848591768
 
 # AI Models
 AVAILABLE_AI_MODELS = {
