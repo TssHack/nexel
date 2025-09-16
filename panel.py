@@ -1,14 +1,14 @@
 # panel.py
 from telethon import Button
 from database import get_all_user_ids, get_mandatory_channels, add_mandatory_channel, remove_mandatory_channel
-from database import is_admin, get_all_admins, add_admin, remove_admin, get_setting, set_setting
+from database import is_admin, get_all_admins, add_admin, remove_admin
 from translations import get_translation
-from main import bot_active, client  # Import necessary variables
+from utils import get_user_pref, set_user_pref
 
-async def show_admin_panel(event, edit=False):
+async def show_admin_panel(event, bot_active, user_data, edit=False):
     """Display admin panel"""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     bot_status = "✅ ON" if bot_active else "❌ OFF"
     text = f"**{get_translation('admin_panel_title', lang_code)}**\n\n"
@@ -33,10 +33,10 @@ async def show_admin_panel(event, edit=False):
         if edit:
             await event.respond(text, buttons=buttons)
 
-async def admin_manage_mandatory_channels(event):
+async def admin_manage_mandatory_channels(event, user_data, admin_states):
     """Manage mandatory channels"""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     channels = await get_mandatory_channels()
     
@@ -60,10 +60,10 @@ async def admin_manage_mandatory_channels(event):
     
     await event.edit(text, buttons=buttons)
 
-async def admin_add_mandatory_channel(event):
+async def admin_add_mandatory_channel(event, user_data, admin_states):
     """Add mandatory channel"""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     admin_states[user_id] = 'awaiting_mandatory_channel'
     await event.edit(
@@ -71,10 +71,10 @@ async def admin_add_mandatory_channel(event):
         buttons=[Button.inline("🔙 Back", b"admin_mandatory_channels")]
     )
 
-async def admin_remove_mandatory_channel(event):
+async def admin_remove_mandatory_channel(event, user_data, client):
     """Remove mandatory channel"""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     channels = await get_mandatory_channels()
     if not channels:
@@ -95,10 +95,10 @@ async def admin_remove_mandatory_channel(event):
         buttons=buttons
     )
 
-async def admin_add_admin(event):
+async def admin_add_admin(event, user_data, admin_states):
     """Add new admin"""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     admin_states[user_id] = 'awaiting_new_admin'
     await event.edit(
@@ -106,10 +106,10 @@ async def admin_add_admin(event):
         buttons=[Button.inline("🔙 Back", b"admin_panel")]
     )
 
-async def admin_remove_admin(event):
+async def admin_remove_admin(event, user_data, client):
     """Remove admin"""
     user_id = event.sender_id
-    lang_code = await get_user_pref(user_id, 'ui_lang', 'fa')
+    lang_code = await get_user_pref(user_data, user_id, 'ui_lang', 'fa')
     
     admins = await get_all_admins()
     if len(admins) <= 1:
