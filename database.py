@@ -1,6 +1,5 @@
 # database.py
 import aiosqlite
-import asyncio
 import traceback
 from config import DB_FILE
 
