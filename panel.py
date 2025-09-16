@@ -1,8 +1,9 @@
 # panel.py
 from telethon import Button
-from database import get_all_user_ids, get_mandatory_channels, add_mandatory_channel, remove_mandatory_channels
+from database import get_all_user_ids, get_mandatory_channels, add_mandatory_channel, remove_mandatory_channel
 from database import is_admin, get_all_admins, add_admin, remove_admin, get_setting, set_setting
 from translations import get_translation
+from main import bot_active, client  # Import necessary variables
 
 async def show_admin_panel(event, edit=False):
     """Display admin panel"""
