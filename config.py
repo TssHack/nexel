@@ -3,18 +3,8 @@ API_ID = 18377832
 API_HASH = "ed8556c450c6d0fd68912423325dd09c"
 SESSION_NAME = "my_ai_multilang"
 DB_FILE = "users_data.db"
+DEFAULT_ADMIN_ID = 7094106651
 
-# API Endpoints
-GPT4_API_URL = "https://api.binjie.fun/api/generateStream"
-LAMA_API_URL = "http://lama-ehsan.vercel.app/chat"
-GEMINI_API_URL = "https://gem-ehsan.vercel.app/gemini/chat"
-
-# Default Settings
-DEFAULT_AI_MODEL = "gpt4"
-DEFAULT_LANGUAGE = "fa"
-DEFAULT_ADMIN_ID = 1848591768
-
-# AI Models
 AVAILABLE_AI_MODELS = {
     "gpt4": "GPT-4",
     "qwen2.5": "Qwen2.5 Coder",
@@ -34,7 +24,6 @@ AVAILABLE_AI_MODELS = {
     "2.5pro": "Gemini 2.5 Pro"
 }
 
-# Coding Languages
 CODING_LANGUAGES = [
     "Node.js", "Python", "Java", "JavaScript", "C#", "C++", 
     "Swift", "Golang", "Rust", "Kotlin", "TypeScript", "PHP", 
@@ -42,7 +31,6 @@ CODING_LANGUAGES = [
     "VHDL", "Solidity", "Delphi", "R", "Elixir", "Lua"
 ]
 
-# File Extensions
 EXT_MAP = {
     "Python": "py", "Java": "java", "JavaScript": "js", "C#": "cs", "C++": "cpp", "C": "c",
     "Swift": "swift", "Golang": "go", "Rust": "rs", "Kotlin": "kt", "TypeScript": "ts",
